@@ -3,15 +3,15 @@
 
 
 
-PREFIX=/usr/local
+PREFIX=/root
 
-SCRIPTS_SBIN= update-ports.sh build-packages.sh
+SCRIPTS= update-ports.sh build-packages.sh
 
 
 all:
 
 
-install:	$(SCRIPTS_SBIN)
-	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/sbin 
+install:	$(SCRIPTS)
+	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/bin 
 
 
