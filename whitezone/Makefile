@@ -3,7 +3,7 @@
 
 
 
-PREFIX=/opt/local
+PREFIX=/usr/local
 
 SCRIPTS= update-ports.sh build-packages.sh
 

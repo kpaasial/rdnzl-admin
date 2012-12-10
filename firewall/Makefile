@@ -2,8 +2,7 @@
 
 
 
-
-PREFIX=/opt/local
+PREFIX=/usr/local
 
 SCRIPTS= firewall-log.sh
 
