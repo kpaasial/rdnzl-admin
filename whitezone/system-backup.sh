@@ -51,6 +51,7 @@ for MOUNTPOINT in $(zfs list -H -o mountpoint -r ${SOURCEDATASET} | grep -vw non
     # the destination side
     MOUNTPOINT_FLAT=$(echo $MOUNTPOINT | sed -e 's+/+_+g')
 
+    # TODO: create a new zfs dataset automatically if it does not exist.
     if [ ! -d "${BACKUPDIRECTORY}/${MOUNTPOINT_FLAT}" ]; then
         echo "Destination directory ${BACKUPDIRECTORY}/${MOUNTPOINT_FLAT} does not exist, create it first"
         exit 1
