@@ -5,7 +5,7 @@
 
 PREFIX=/opt/local
 
-SCRIPTS= firewall-log.sh
+SCRIPTS= firewall-log.sh system-dump.sh
 
 
 all:
