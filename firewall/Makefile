@@ -3,7 +3,7 @@
 
 
 
-PREFIX=/root
+PREFIX=/opt/local
 
 SCRIPTS= firewall-log.sh
 

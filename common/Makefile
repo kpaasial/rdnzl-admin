@@ -3,7 +3,7 @@
 
 
 
-PREFIX=/root
+PREFIX=/opt/local
 
 SCRIPTS= update-src.sh
 
