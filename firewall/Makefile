@@ -4,13 +4,13 @@
 
 PREFIX=/usr/local
 
-SCRIPTS= firewall-log.sh system-dump.sh
+SCRIPTS= firewall-log.sh update-pf-tables.sh system-dump.sh
 
 
 all:
 
 
 install:	$(SCRIPTS)
-	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/bin 
+	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/sbin 
 
 
