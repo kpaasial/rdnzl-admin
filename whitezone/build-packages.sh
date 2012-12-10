@@ -2,7 +2,7 @@
 
 PORTSTXT=$1
 
-: ${PORTSTXT:="/opt/local/etc/ports.txt"}
+: ${PORTSTXT:="/usr/local/etc/ports.txt"}
 
 
 echo "Using ${PORTSTXT} as the list for ports to build."
