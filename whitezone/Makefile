@@ -12,6 +12,6 @@ all:
 
 
 install:	$(SCRIPTS)
-	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/bin 
+	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/sbin 
 
 
