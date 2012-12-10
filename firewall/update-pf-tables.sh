@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CONFIG=/var/db/pf-tables/pf-tables.txt
+CONFIG=/usr/local/etc/pf-tables.txt
 
 while read URL TABLEFILE
 do
