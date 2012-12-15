@@ -1,0 +1,29 @@
+#!/bin/sh
+
+
+
+if [ -n "$TMUX" ]; then
+    # Already in tmux session, do nada
+    echo "Already in tmux session"
+    exit 1
+fi
+
+
+# Set up ssh agent forwarding
+# TODO: This could test for existing working socket and do something different if one exists.
+if [ -n  "$SSH_TTY" ] && [ -n "${SSH_AUTH_SOCK}" ]; then # Ssh connection and agent forwarding is on
+    ln -sf "$SSH_AUTH_SOCK" "/tmp/.wrap_auth_sock-${USER}" # Create the symbolic link
+    export SSH_AUTH_SOCK="/tmp/.wrap_auth_sock-${USER}" # Set SSH_AUTH_SOCK to the link
+fi
+
+
+TMUX_SESSION=$1
+
+: ${TMUX_SESSION:="sshwrap"}
+
+export STY="tmux-${TMUX_SESSION}"
+if tmux has-session -t "${TMUX_SESSION}"; then
+    exec tmux attach-session -t "${TMUX_SESSION}"
+else
+    exec tmux new-session -s "${TMUX_SESSION}"
+fi

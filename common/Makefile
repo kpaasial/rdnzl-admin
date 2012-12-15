@@ -5,13 +5,18 @@
 
 PREFIX=/usr/local
 
-SCRIPTS= update-src.sh
+SBIN_SCRIPTS= update-src.sh cputemp.sh
+BIN_SCRIPTS= tmux-session
 
 
 all:
 
 
-install:	$(SCRIPTS)
+install:    install-sbin install-bin
+
+install-sbin: $(SBIN_SCRIPTS)
 	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/sbin 
 
+install-bin: $(BIN_SCRIPTS)
+	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/bin
 
