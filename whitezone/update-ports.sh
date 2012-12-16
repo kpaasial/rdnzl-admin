@@ -20,7 +20,7 @@ done
 # If run in cron mode delay for up to 1800 seconds before continuing
 
 if [ -n "$CRONMODE" ]; then
-    sleep `jot -r 1 0 1800`
+    sleep `jot -r 1 0 1200`
 fi
 
 
