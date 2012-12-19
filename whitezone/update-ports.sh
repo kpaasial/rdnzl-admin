@@ -6,11 +6,12 @@ PKGNG=/usr/local/sbin/pkg
 
 # parse options
 
-while getopts ci o
+while getopts ciu o
 do
     case "$o" in 
     c)  CRONMODE=y;;  
     i)  INITMODE=y;;
+    u)  UPDATING=y;;
     esac
 
 done
@@ -49,9 +50,21 @@ EOT
 if [ -n "$INITMODE" ]; then
     /usr/local/bin/cache-init
 else
+    cat <<EOT
+
+Updating portindex-cache database.
+-------------------------------------
+
+EOT
     /usr/local/bin/cache-update
 fi
 
+cat <<EOT
+
+Creating INDEX with portindex(1).
+-------------------------------------
+
+EOT
 /usr/local/bin/portindex -o /usr/ports/INDEX-9
 
 
@@ -74,15 +87,15 @@ EOT
 
 ${PKGNG} version -IvL=
 
-
-UPD_START_DATE=$(/bin/date -v-1m +%Y%m%d)
-cat <<EOT
+if [ -n "$UPDATING" ]; then
+    UPD_START_DATE=$(/bin/date -v-1m +%Y%m%d)
+    cat <<EOT
 
 Warnings from /usr/ports/UPDATING for installed packages
 from ${UPD_START_DATE} to today.
 ---------------------------------------------------------
 EOT
 
-${PKGNG} updating -d ${UPD_START_DATE} || exit 1
-
+    ${PKGNG} updating -d ${UPD_START_DATE} || exit 1
+fi
 
