@@ -10,12 +10,12 @@ SOURCEDATASET=$1
 
 # First test that source and destination are available
 
-if ! [ $(/sbin/zfs list -H -o name ${SOURCEDATASET} ) ]; then
+if ! [  $(/sbin/zfs list -H -o name "${SOURCEDATASET}" ) ]; then
     echo "Source dataset ${SOURCEDATASET} not available, can not continue."
     exit 1
 fi
 
-if ! [ $(/sbin/zpool list -H -o name ${BACKUPPOOL} ) ]; then
+if ! [ $(/sbin/zpool list -H -o name "${BACKUPPOOL}" ) ]; then
     echo "Backup pool ${BACKUPPOOL} not available, can not continue."
     exit 1
 fi
@@ -23,35 +23,32 @@ fi
 DESTDATASET="${BACKUPPOOL}/${BACKUPDATASET}/${SOURCEDATASET}"
 
 
-if ! [ $(/sbin/zfs list -H -o name ${DESTDATASET} ) ]; then
+if ! [ $(/sbin/zfs list -H -o name "${DESTDATASET}" ) ]; then
     echo "Destination dataset ${DESTDATASET} not available, can not continue."
     exit 1
 fi
 
 
+# Find the last snapshot in the backup pool of the source dataset.
 
-
-# Find out the last snapshot in the backup pool of the source dataset
-# This will fail to find snapshots that are done separately on a child
-# dataset of the source dataset.
-
-LATESTBACKUPSNAP=$(/sbin/zfs list -t snapshot -r -H -o name \
-    -S creation | grep "^${DESTDATASET}@" | \
-     head -1 | cut -d@ -f2) 
+LATESTBACKUPSNAP=$(/sbin/zfs list -t snapshot -r -H -o name -S creation | \
+    grep "^${DESTDATASET}@" | head -1 | cut -d@ -f2) 
 
 # Create a short-lived recursive snapshot of the source dataset
+echo "Creating a recursive snapshot of ${SOURCEDATASET} with 1 day ttl"
+ 
 SNAPNAME=$(/usr/local/bin/zfs_snapshot.py -p zfsbck -a 1d -r ${SOURCEDATASET})
 
 echo "Snapshot name is ${SNAPNAME}"
 
 # Now the magic.
 # For 'zfs send' the -R flag is used to create a replication stream or
-# incremental replication stream. 
+# incremental replication stream if -I flag is used. 
 
 # The argument for 'zfs send' is the name of the snapshot created above
 
 # If there are previous snapshots of the source data set in the backup,
-# the latest one of the is used for the -I option as the basis for the
+# the latest one of them is used for the -I option as the basis for the
 # incremental replication stream.
 
 # On 'zfs receive' the -d option is used and the destination filesystem is set
