@@ -5,7 +5,7 @@
 
 PREFIX=/usr/local
 
-SCRIPTS= update-ports.sh build-packages.sh system-backup.sh \
+SCRIPTS= update-ports.sh build-packages.sh zfs-backup.sh \
     zfs-snapshot-rotate.sh
 
 
