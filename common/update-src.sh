@@ -17,10 +17,10 @@ if [ -n "${CRONMODE}" ]; then
     sleep `jot -r 1 0 1200`
 fi
 
-cd ${SRC_DIR} && ${GIT} fetch -v
+cd ${SRC_DIR} && ${GIT} fetch
 
 if [ -z "${CRONMODE}" ]; then
-    cd ${SRC_DIR} && ${GIT} merge -v FETCH_HEAD
+    cd ${SRC_DIR} && ${GIT} merge FETCH_HEAD
 fi
 
 echo "$0 done."
