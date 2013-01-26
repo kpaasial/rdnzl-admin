@@ -7,6 +7,12 @@
 
 PKGNG=/usr/local/sbin/pkg
 
+
+if [ `id -u` -ne 0 ]; then
+    echo "Please run $0 as root."
+    exit 1
+fi
+
 cat <<EOT
 Updating audit database and checking for vulnerable packages.
 -------------------------------------------------------------
@@ -41,4 +47,11 @@ EOT
 
 ${PKGNG} query -e '%a=1 && %#r=0' '%n-%v' || exit 1
 
+cat <<EOT
+
+Out of date packages.
+---------------------
+EOT
+
+${PKGNG} version -vL '='
 
