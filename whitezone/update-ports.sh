@@ -2,7 +2,7 @@
 
 # Script for updating the ports tree.
 
-PORTS_DIR=/usr/ports
+PORTS_DIR=`poudriere ports -lq | grep ^default | (read name method portsdir; echo -n $portsdir)`
 GIT=/usr/local/bin/git
 
 while getopts c o
@@ -21,12 +21,12 @@ fi
 
 cat <<EOT
 
-Pulling updates for /usr/ports with git(1).
+Pulling updates for ${PORTS_DIR} with git(1).
 -------------------------------------
 
 EOT
 
-cd ${PORTS_DIR} && ${GIT} fetch -v
+cd ${PORTS_DIR} && ${GIT} fetch
 
 
 if [ -n "${CRONMODE}" ]; then
@@ -34,16 +34,7 @@ if [ -n "${CRONMODE}" ]; then
     exit 0
 fi 
 
-cd ${PORTS_DIR} && ${GIT} merge -v FETCH_HEAD
-
-cat <<EOT
-
-Creating INDEX.
--------------------------------------
-
-EOT
-
-make -C ${PORTS_DIR} index
+cd ${PORTS_DIR} && ${GIT} merge FETCH_HEAD
 
 echo "$0 done."
 
