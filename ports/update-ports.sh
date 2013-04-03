@@ -2,8 +2,10 @@
 
 # Script for updating the ports tree.
 
+POUDRIERE=/usr/local/bin/poudriere
+
+
 PORTS_DIR=`poudriere ports -lq | grep ^default | (read name method portsdir; echo -n $portsdir)`
-GIT=/usr/local/bin/git
 
 while getopts c o
 do
@@ -21,20 +23,12 @@ fi
 
 cat <<EOT
 
-Pulling updates for ${PORTS_DIR} with git(1).
+Updating the default ports tree at ${PORTS_DIR}
 -------------------------------------
 
 EOT
 
-cd ${PORTS_DIR} && ${GIT} fetch
-
-
-if [ -n "${CRONMODE}" ]; then
-    echo "$0 done."
-    exit 0
-fi 
-
-cd ${PORTS_DIR} && ${GIT} merge FETCH_HEAD
+${POUDRIERE} ports -u -p default
 
 echo "$0 done."
 
