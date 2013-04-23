@@ -4,7 +4,7 @@
 
 PREFIX=/usr/local
 
-SCRIPTS= firewall-log.sh update-pf-tables.sh system-dump.sh
+SCRIPTS= firewall-log.sh update-pf-tables.sh
 
 
 all:
