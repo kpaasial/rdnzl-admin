@@ -2,10 +2,9 @@
 
 # Script for updating the ports tree.
 
-POUDRIERE=/usr/local/bin/poudriere
+SVN=/usr/local/bin/svn
 
-
-PORTS_DIR=`poudriere ports -lq | grep ^default | (read name method portsdir; echo -n $portsdir)`
+: ${PORTS_DIR:="/usr/ports"}
 
 while getopts c o
 do
@@ -28,7 +27,10 @@ Updating the default ports tree at ${PORTS_DIR}
 
 EOT
 
-${POUDRIERE} ports -u -p default
+
+[ -d $PORTS_DIR ]  && $SVN up $PORTS_DIR
+
+cd $PORTS_DIR && make fetchindex
 
 echo "$0 done."
 
