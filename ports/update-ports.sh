@@ -22,7 +22,7 @@ fi
 
 cat <<EOT
 
-Updating the default ports tree at ${PORTS_DIR}
+Updating the ports tree at ${PORTS_DIR}
 -------------------------------------
 
 EOT
