@@ -47,11 +47,4 @@ EOT
 
 ${PKGNG} query -e '%a=1 && %#r=0' '%n-%v' || exit 1
 
-cat <<EOT
-
-Out of date packages.
----------------------
-EOT
-
-${PKGNG} version -vL '='
 
