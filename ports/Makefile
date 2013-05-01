@@ -5,7 +5,7 @@
 
 PREFIX=/usr/local
 
-SCRIPTS= check-packages.sh check-updating.sh update-ports.sh
+SCRIPTS= check-packages.sh check-port-updates.sh update-ports.sh
 
 
 all:
