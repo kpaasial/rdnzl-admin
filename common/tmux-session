@@ -43,6 +43,7 @@ USERSOCKET="/tmp/.wrap_auth_sock-${USER}-${TMUX_SESSION}"
 
 if [ -n "${FORCE_DETACH}" ]; then
     tmux detach-client -s "${TMUX_SESSION}"
+    sleep 3
 fi
 
 
