@@ -27,7 +27,7 @@ Checking package dependencies
 --------------------------------------
 EOT
 
-${PKGNG} check -d 
+${PKGNG} check -dn
 
 
 cat <<EOT
