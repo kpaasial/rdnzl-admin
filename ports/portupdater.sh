@@ -12,6 +12,10 @@ do
 
 done
 
+
+
+echo "$0 starting at $(/bin/date '+%d.%m.%Y %H:%M:%S')"
+
 # Delay for up to 1200 seconds before continuing in cron mode.
 
 if [ -n "${CRONMODE}" ]; then
@@ -24,7 +28,7 @@ fi
 
 /usr/local/sbin/check-packages.sh
 
-echo "$0 done."
+echo "$0 done at $(/bin/date '+%d.%m.%Y %H:%M:%S')"
 
 exit 0
 
