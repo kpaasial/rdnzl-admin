@@ -10,3 +10,5 @@ find ${PKG_DBDIR} -type d -maxdepth 1 -mindepth 1 | cut -d / -f 5 | \
         fi
     done
     
+exit 0
+
