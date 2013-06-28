@@ -18,10 +18,11 @@ fi
 
 # Command line arguments
 
-while getopts d o
+while getopts dn o
 do
     case "$o" in
     d)  FORCE_DETACH="yes";;
+    n)  IGNORE_AGENT="yes";;
     esac
 
 done
@@ -64,10 +65,10 @@ if [ -L "${USERSOCKET}" ]; then
 fi
 
 if [ -n  "$SSH_TTY" ] && [ -n "${SSH_AUTH_SOCK}" ]; then # Ssh connection and agent forwarding is on
-    ln -s "$SSH_AUTH_SOCK" "${USERSOCKET}" # Create the symbolic link
-    export SSH_AUTH_SOCK="${USERSOCKET}" # Set SSH_AUTH_SOCK to the link
     # Set up trap to clean the link automatically
     trap tmux-session-cleanup EXIT HUP
+    ln -s "$SSH_AUTH_SOCK" "${USERSOCKET}" # Create the symbolic link
+    export SSH_AUTH_SOCK="${USERSOCKET}" # Set SSH_AUTH_SOCK to the link
 fi
 
 
