@@ -18,8 +18,7 @@ Updating audit database and checking for vulnerable packages.
 -------------------------------------------------------------
 EOT
 
-/usr/local/etc/periodic/security/410.pkg-audit
-
+${PKGNG} audit -Fx
 
 cat <<EOT
 
@@ -47,4 +46,5 @@ EOT
 
 ${PKGNG} query -e '%a=1 && %#r=0' '%n-%v' || exit 1
 
+exit 0
 
