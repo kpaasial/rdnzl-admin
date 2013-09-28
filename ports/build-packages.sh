@@ -2,7 +2,7 @@
 
 
 : ${PORTSTXT:="/usr/local/etc/ports.txt"}
-: ${BUILD_JAIL:="release91i386"}
+: ${BUILD_JAIL:="stable9i386"}
 
 
 while getopts f:j: o
