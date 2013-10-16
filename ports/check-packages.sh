@@ -4,21 +4,18 @@
 # other checks for installed packages.
 
 # This does not need the ports tree at /usr/ports.
+# Can be run as non-root, the fetch scripts are separate.
 
 PKGNG=/usr/local/sbin/pkg
 
 
-if [ `id -u` -ne 0 ]; then
-    echo "Please run $0 as root."
-    exit 1
-fi
 
 cat <<EOT
-Updating audit database and checking for vulnerable packages.
--------------------------------------------------------------
+Checking for vulnerable packages.
+---------------------------------
 EOT
 
-${PKGNG} audit -Fx
+${PKGNG} audit -x
 
 cat <<EOT
 
@@ -35,7 +32,7 @@ Checking package checksums
 --------------------------------------
 EOT
 
-${PKGNG} check -s 
+${PKGNG} check -sn 
 
 cat <<EOT
 
