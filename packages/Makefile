@@ -5,7 +5,8 @@
 
 PREFIX=/usr/local
 
-SCRIPTS= check-packages.sh check-port-updates.sh fetch-updating.sh fetch-audit.sh
+SCRIPTS=    check-packages.sh check-port-updates.sh fetch-updating.sh fetch-audit.sh \
+            package-updater.sh
 
 
 all:
