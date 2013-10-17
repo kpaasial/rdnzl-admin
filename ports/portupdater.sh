@@ -24,13 +24,6 @@ fi
 
 /usr/local/sbin/update-ports.sh
 
-/usr/local/sbin/fetch-audit.sh
-
-/usr/local/sbin/fetch-updating.sh
-
-/usr/local/sbin/check-port-updates.sh
-
-/usr/local/sbin/check-packages.sh
 
 echo "$0 done at $(/bin/date '+%d.%m.%Y %H:%M:%S')"
 
