@@ -26,7 +26,7 @@ Updating the ports tree "default"
 EOT
 
 
-$POUDRIERE ports -u 
+$POUDRIERE ports -u -v
 
 exit 0
 
