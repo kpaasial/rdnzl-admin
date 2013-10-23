@@ -1,0 +1,227 @@
+ident FIREWALL
+include GENERIC
+
+nocpu   I486_CPU
+nocpu   I586_CPU
+
+nooptions   COMPAT_FREEBSD4
+nooptions   COMPAT_FREEBSD5
+nooptions   COMPAT_FREEBSD6
+nooptions   COMPAT_FREEBSD7
+nooptions   COMPAT_AOUT
+nooptions   COMPAT_LINUX
+
+nodevice eisa
+
+option DDB
+
+nodevice    fdc
+
+nodevice    mvs
+nodevice    siis
+nooptions   GEOM_RAID
+
+nodevice    ahc
+nodevice    ahd
+nodevice    esp
+nodevice    hptiop
+nodevice    isp
+nodevice    mpt
+nodevice    mps
+nodevice    sym
+nodevice    trm
+
+nodevice    adv
+nodevice    adw
+nodevice    ahb
+nodevice    aha
+nodevice    aic
+nodevice    bt
+nodevice    ncv
+nodevice    nsp
+nodevice    stg
+nodevice    isci
+
+nooptions   AH_SUPPORT_AR5416
+nooptions   AHD_REG_PRETTY_PRINT
+nooptions   AHC_REG_PRETTY_PRINT
+
+nodevice    ctl
+
+nodevice    amr
+nodevice    arcmsr
+nodevice    asr
+nodevice    ciss
+nodevice    dpt
+nodevice    hptmv
+nodevice    hptrr
+nodevice    iir
+nodevice    ips
+nodevice    mly
+nodevice    twa
+nodevice    tws
+
+nodevice    aac
+nodevice    aacraid
+nodevice    aacp
+nodevice    ida
+nodevice    mfi
+nodevice    mlx
+nodevice    twe
+nodevice    tws
+
+nodevice    hptnr
+nodevice    hpt27xx
+nodevice    pst
+nodevice    urio
+
+
+nodevice    agp
+
+nodevice    cbb
+nodevice    pccard
+nodevice    cardbus
+
+nodevice    ppc
+nodevice    ppbus
+nodevice    lpt
+nodevice    plip
+nodevice    ppi
+nodevice    puc
+
+nodevice    bxe
+nodevice    de
+nodevice    le
+nodevice    em
+nodevice    igb
+nodevice    ixgb
+nodevice    le
+nodevice    ti
+nodevice    txp
+nodevice    vx
+
+nodevice    ae
+nodevice    age
+nodevice    alc
+nodevice    ale
+nodevice    bce
+nodevice    bfe
+nodevice    bge
+nodevice    cas
+nodevice    dc
+nodevice    et
+nodevice    fxp
+nodevice    gem
+nodevice    hme
+nodevice    jme
+nodevice    lge
+nodevice    msk
+nodevice    nfe
+nodevice    nge
+nodevice    pcn
+nodevice    re
+nodevice    sf
+nodevice    sge
+nodevice    sis
+nodevice    sk
+nodevice    ste
+nodevice    stge
+nodevice    tl
+nodevice    tx
+nodevice    vge
+nodevice    vte
+nodevice    wb
+nodevice    xl
+
+nodevice    cs
+nodevice    ed
+nodevice    ex
+nodevice    ep
+nodevice    fe
+nodevice    ie
+nodevice    sn
+nodevice    xe
+
+nodevice    wlan
+nodevice    wlan_wep
+nodevice    wlan_ccmp
+nodevice    wlan_tkip
+nodevice    wlan_amrr
+nodevice    an
+nodevice    ath
+nodevice    ath_pci
+nodevice    ath_hal
+nodevice    ath_rate_sample
+nodevice    ipw
+nodevice    iwi
+nodevice    iwn
+nodevice    malo
+nodevice    mwl
+nodevice    ral
+nodevice    wi
+nodevice    wpi
+
+nodevice    u3g
+nodevice    uark
+nodevice    ubsa
+nodevice    uftdi
+nodevice    uipaq
+nodevice    uplcom
+nodevice    uslcom
+nodevice    uvisor
+nodevice    uvscom
+
+nodevice    aue
+nodevice    axe
+nodevice    cdce
+nodevice    cue
+nodevice    kue
+nodevice    rue
+nodevice    udav
+
+nodevice    rum
+nodevice    run
+nodevice    uath
+nodevice    upgt
+nodevice    ural
+nodevice    urtw
+nodevice    zyd
+
+nodevice          firewire        # FireWire bus code
+# sbp(4) works for some systems but causes boot failure on others
+nodevice         sbp             # SCSI over FireWire (Requires scbus and da)
+nodevice          fwe             # Ethernet over FireWire (non-standard!)
+nodevice          fwip            # IP over FireWire (RFC 2734,3146)
+nodevice          dcons           # Dumb console driver
+nodevice          dcons_crom      # Configuration ROM for dcons
+
+nodevice    sound
+nodevice    snd_cmi
+nodevice    snd_csa
+nodevice    snd_emu10kx
+nodevice    snd_es137x
+nodevice    snd_hda
+nodevice    snd_ich
+nodevice    snd_uaudio
+nodevice    snd_via8233
+
+nodevice    virtio
+nodevice    virtio_pci
+nodevice    vtnet
+nodevice    virtio_blk
+nodevice    virtio_scsi
+nodevice    virtio_balloon
+
+
+device      pf
+device      pflog
+device      pfsync
+
+
+options     ALTQ
+options     ALTQ_CBQ
+options     ALTQ_RED
+options     ALTQ_RIO
+options     ALTQ_HFSC
+options     ALTQ_PRIQ
+options     ALTQ_NOPCC
