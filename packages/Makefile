@@ -12,7 +12,8 @@ SCRIPTS=    check-packages.sh check-port-updates.sh fetch-updating.sh fetch-audi
 all:
 
 
-install:	$(SCRIPTS)
-	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/sbin 
+install:	${SCRIPTS}
+	${INSTALL} -d -o root -g wheel ${DESTDIR}${PREFIX}/sbin
+	${INSTALL} -o root -g wheel -m 755 $> ${DESTDIR}${PREFIX}/sbin 
 
 
