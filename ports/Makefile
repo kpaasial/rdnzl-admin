@@ -5,7 +5,7 @@
 
 PREFIX=/usr/local
 
-SCRIPTS= build-packages.sh portupdater.sh unmaintained-ports.sh update-ports.sh
+SCRIPTS= build-packages.sh unmaintained-ports.sh update-ports.sh
 
 
 all:
