@@ -5,8 +5,12 @@ RSYNC=/usr/local/bin/rsync
 
 
 
-${RSYNC} -avz toor@freebsd10.rdznl.info:/usr/src/ /usr/src
+BUILD_HOST_URI=toor@freebsd10.rdnzl.info
 
-${RSYNC} -avz --exclude='usr/src/release/*' toor@freebsd10.rdznl.info:/usr/obj/ /usr/obj
+
+
+${RSYNC} -avz ${BUILD_HOST_URI}:/usr/src/ /usr/src
+
+${RSYNC} -avz --exclude='usr/src/release/*' ${BUILD_HOST_URI}:/usr/obj/ /usr/obj
 
 
