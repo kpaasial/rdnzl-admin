@@ -4,7 +4,7 @@
 
 DESTDIR=/usr/src/sys/i386/conf
 
-FILES=FIREWALL
+FILES=RDNZL
 
 
 all:
