@@ -210,6 +210,9 @@ nodevice    virtio_blk
 nodevice    virtio_scsi
 nodevice    virtio_balloon
 
+nodevice    xenpci
+nooptions   XENHVM
+nodevice    vmx
 
 device      pf
 device      pflog
