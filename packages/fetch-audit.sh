@@ -8,6 +8,6 @@ Fetching a new vulnxml file
 ---------------------------------------------------------
 EOT
 
-${PKGNG} audit -Fx
+${PKGNG} audit -F
 
 exit 0
