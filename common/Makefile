@@ -5,7 +5,7 @@
 
 PREFIX=/usr/local
 
-SBIN_SCRIPTS= build-release.sh update-src.sh cputemp.sh
+SBIN_SCRIPTS= build-release.sh cputemp.sh
 BIN_SCRIPTS= tmux-session
 
 
