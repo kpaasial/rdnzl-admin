@@ -4,7 +4,7 @@ cd /usr/src || exit 1
 
 test -f Makefile || exit 1
 
-SVNVERSION=$(svnliteversion)
+SVNVERSION="r$(svnliteversion)"
 
 echo "SVNVERSION: $SVNVERSION"
 
