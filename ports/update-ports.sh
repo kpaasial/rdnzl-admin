@@ -4,6 +4,8 @@
 
 POUDRIERE=/usr/local/bin/poudriere
 
+FLOCK=/usr/local/bin/flock
+
 : ${PORTS_TREE:="default"}
 
 while getopts c o
@@ -23,7 +25,7 @@ fi
 
 exec 9>/var/db/rdnzl-admin/ports.lock
 
-if ! flock -n 9  ; then
+if ! ${FLOCK} -n 9  ; then
     echo "Ports tree locked, aborting.";
     exit 1
 fi
