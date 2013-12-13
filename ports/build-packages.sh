@@ -1,5 +1,6 @@
 #!/bin/sh
 
+FLOCK=/usr/local/bin/flock
 
 : ${PORTSTXT:="/usr/local/etc/ports.txt"}
 : ${BUILD_JAIL:="stable10i386"}
@@ -19,7 +20,7 @@ shift $((OPTIND-1))
 
 exec 9>/var/db/rdnzl-admin/ports.lock
 
-if ! flock -n 9  ; then
+if ! ${FLOCK} -n 9  ; then
     echo "Ports tree locked, aborting.";
     exit 1
 fi
