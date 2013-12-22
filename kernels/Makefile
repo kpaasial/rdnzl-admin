@@ -2,15 +2,23 @@
 
 
 
-DESTDIR=/usr/src/sys/i386/conf
+SYSCONFDIR=/usr/src/sys/i386/conf
 
-FILES=RDNZL
+ETCDIR=/etc
 
+KERNCONFFILES=RDNZL
+
+ETCFILES=src.conf
 
 all:
 
+install: install-sysconf install-etc
 
-install:	$(FILES)
-	$(INSTALL) -o root -g wheel -m 640 $> $(DESTDIR) 
+install-sysconf:	${KERNCONFFILES}
+	${INSTALL} -o root -g wheel -m 640 $> ${SYSCONFDIR}
+
+
+install-etc:	${ETCFILES}
+	${INSTALL} -o root -g wheel -m 640 $> ${ETCDIR} 
 
 
