@@ -3,7 +3,7 @@
 FLOCK=/usr/local/bin/flock
 
 : ${PORTSTXT:="/usr/local/etc/ports.txt"}
-: ${BUILD_JAIL:="stable10i386"}
+: ${BUILD_JAIL:="release10_0_i386"}
 
 
 while getopts f:j: o
