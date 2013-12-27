@@ -1,0 +1,4 @@
+http://www.spamhaus.org/drop/drop.txt   drop.txt
+http://www.spamhaus.org/drop/edrop.txt  edrop.txt
+http://www.team-cymru.org/Services/Bogons/fullbogons-ipv4.txt   fullbogons-ipv4.txt
+http://www.team-cymru.org/Services/Bogons/fullbogons-ipv6.txt   fullbogons-ipv6.txt
