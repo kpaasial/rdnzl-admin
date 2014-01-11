@@ -185,13 +185,12 @@ nodevice    ural
 nodevice    urtw
 nodevice    zyd
 
-nodevice          firewire        # FireWire bus code
-# sbp(4) works for some systems but causes boot failure on others
-nodevice         sbp             # SCSI over FireWire (Requires scbus and da)
-nodevice          fwe             # Ethernet over FireWire (non-standard!)
-nodevice          fwip            # IP over FireWire (RFC 2734,3146)
-nodevice          dcons           # Dumb console driver
-nodevice          dcons_crom      # Configuration ROM for dcons
+nodevice    firewire
+nodevice    sbp
+nodevice    fwe
+nodevice    fwip
+nodevice    dcons
+nodevice    dcons_crom
 
 nodevice    sound
 nodevice    snd_cmi
@@ -203,12 +202,12 @@ nodevice    snd_ich
 nodevice    snd_uaudio
 nodevice    snd_via8233
 
-nodevice    virtio
-nodevice    virtio_pci
-nodevice    vtnet
-nodevice    virtio_blk
-nodevice    virtio_scsi
-nodevice    virtio_balloon
+#nodevice    virtio
+#nodevice    virtio_pci
+#nodevice    vtnet
+#nodevice    virtio_blk
+#nodevice    virtio_scsi
+#nodevice    virtio_balloon
 
 nodevice    xenpci
 nooptions   XENHVM
