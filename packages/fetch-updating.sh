@@ -3,11 +3,11 @@
 
 PKGNG=/usr/local/sbin/pkg 
 
-FETCH=/usr/bin/fetch
+SVN=/usr/bin/svn
 
 INSTALL=/usr/bin/install
 
-UPDATING_URL=http://freebsd10.rdnzl.info/ports/UPDATING
+UPDATING_URL=https://svn0.eu.freebsd.org/ports/head/UPDATING
 
 UPDATING_DB_PATH=/var/db/rdnzl-admin
 
@@ -20,7 +20,7 @@ Fetching a new UPDATING file
 EOT
 
 ${INSTALL} -d -o root -g wheel ${UPDATING_DB_PATH}
-${FETCH} -o ${UPDATING_DB_PATH}/UPDATING ${UPDATING_URL}
+${SVN} export --force ${UPDATING_URL} ${UPDATING_DB_PATH}/UPDATING
 
 cat <<EOT
 
