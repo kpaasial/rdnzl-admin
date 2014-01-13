@@ -15,9 +15,16 @@ ${PKGNG} update
 /usr/local/sbin/fetch-audit.sh
 
 # Check for updated packages 
+
+cat <<EOT
+
+Out of date packages.
+---------------------
+
+EOT
+
 ${PKGNG} version -RUvL '='
 
-#/usr/local/sbin/check-packages.sh
 
 
 
