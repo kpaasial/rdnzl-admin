@@ -2,14 +2,22 @@
 
 FLOCK=/usr/local/bin/flock
 
-: ${PORTSTXT:="/usr/local/etc/ports.txt"}
-: ${BUILD_JAIL:="stable10i386"}
+
+: ${RDNZL_CONFIG:="/usr/local/etc/rdnzl-admin/rdnzl.conf"}
+
+
+if [ -f ${RDNZL_CONFIG} ]; then
+    . ${RDNZL_CONFIG}
+else
+    echo "Configuration file ${RDNZL_CONFIG} missing."
+    exit 1
+fi
 
 
 while getopts f:j: o
 do
     case "$o" in
-    f)  PORTSTXT="$OPTARG";;
+    f)  PORTS_TXT="$OPTARG";;
     j)  BUILD_JAIL="$OPTARG";;
     esac
 
@@ -26,10 +34,10 @@ if ! ${FLOCK} -n 9  ; then
 fi
 
 
-echo "Using ${PORTSTXT} as the list for ports to build."
+echo "Using ${PORTS_TXT} as the list for ports to build."
 echo "Using ${BUILD_JAIL} as the build jail."
 
 
-/usr/local/bin/poudriere bulk -f ${PORTSTXT} -j ${BUILD_JAIL} 
+/usr/local/bin/poudriere bulk -f ${PORTS_TXT} -j ${BUILD_JAIL} 
 
 
