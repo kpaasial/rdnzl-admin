@@ -11,8 +11,6 @@ nooptions   COMPAT_FREEBSD7
 nooptions   COMPAT_AOUT
 nooptions   COMPAT_LINUX
 
-nodevice eisa
-
 option DDB
 
 nodevice    fdc
