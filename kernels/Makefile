@@ -1,8 +1,8 @@
 
 
+ARCH != uname -m
 
-
-SYSCONFDIR=/usr/src/sys/i386/conf
+SYSCONFDIR=/usr/src/sys/${ARCH}/conf
 
 ETCDIR=/etc
 
