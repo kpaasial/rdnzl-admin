@@ -15,10 +15,10 @@ all:
 install: install-sysconf install-etc
 
 install-sysconf:	${KERNCONFFILES}
-	${INSTALL} -o root -g wheel -m 640 $> ${SYSCONFDIR}
+	${INSTALL} -o root -g wheel -m 644 $> ${SYSCONFDIR}
 
 
 install-etc:	${ETCFILES}
-	${INSTALL} -o root -g wheel -m 640 $> ${ETCDIR} 
+	${INSTALL} -o root -g wheel -m 644 $> ${ETCDIR} 
 
 
