@@ -3,7 +3,8 @@
 
 PKGNG=/usr/local/sbin/pkg 
 
-SVN=/usr/bin/svn
+
+: ${SVN_CMD:=$(which svn 2>/dev/null || which svnlite 2>/dev/null)}
 
 INSTALL=/usr/bin/install
 
@@ -20,7 +21,7 @@ Fetching a new UPDATING file
 EOT
 
 ${INSTALL} -d -o root -g wheel ${UPDATING_DB_PATH}
-${SVN} export --force ${UPDATING_URL} ${UPDATING_DB_PATH}/UPDATING
+${SVN_CMD} export --force ${UPDATING_URL} ${UPDATING_DB_PATH}/UPDATING
 
 cat <<EOT
 
