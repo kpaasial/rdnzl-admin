@@ -1,5 +1,5 @@
-ident RDNZL
 include GENERIC
+ident RDNZL
 
 nocpu   I486_CPU
 nocpu   I586_CPU
@@ -200,12 +200,12 @@ nodevice    snd_ich
 nodevice    snd_uaudio
 nodevice    snd_via8233
 
-#nodevice    virtio
-#nodevice    virtio_pci
-#nodevice    vtnet
-#nodevice    virtio_blk
-#nodevice    virtio_scsi
-#nodevice    virtio_balloon
+nodevice    virtio
+nodevice    virtio_pci
+nodevice    vtnet
+nodevice    virtio_blk
+nodevice    virtio_scsi
+nodevice    virtio_balloon
 
 nodevice    xenpci
 nooptions   XENHVM
