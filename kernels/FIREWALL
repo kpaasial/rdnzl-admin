@@ -74,6 +74,10 @@ nodevice    pst
 nodevice    urio
 
 
+nodevice  mmc
+nodevice  mmcsd
+nodevice  sdhci
+
 nodevice    agp
 nodevice    vga
 nodevice    sc
@@ -96,8 +100,10 @@ nodevice    puc
 nodevice    bxe
 nodevice    de
 nodevice    le
+nodevice    em
 nodevice    igb
 nodevice    ixgb
+nodevice    re
 nodevice    le
 nodevice    ti
 nodevice    txp
@@ -212,6 +218,8 @@ nodevice    vtnet
 nodevice    virtio_blk
 nodevice    virtio_scsi
 nodevice    virtio_balloon
+
+nodevice    hyperv
 
 nodevice    xenpci
 nooptions   XENHVM
