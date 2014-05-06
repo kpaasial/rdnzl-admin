@@ -12,7 +12,7 @@ ETCFILES=src.conf
 
 all:
 
-install: install-sysconf install-etc
+install: install-sysconf
 
 install-sysconf:	${KERNCONFFILES}
 	${INSTALL} -o root -g wheel -m 644 $> ${SYSCONFDIR}
