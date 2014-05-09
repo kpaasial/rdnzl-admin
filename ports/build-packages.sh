@@ -14,11 +14,12 @@ else
 fi
 
 
-while getopts f:j: o
+while getopts "f:j:p:" o
 do
     case "$o" in
     f)  PORTS_TXT="$OPTARG";;
     j)  BUILD_JAIL="$OPTARG";;
+    p)  PORTS_TREE="$OPTARG";;
     esac
 
 done
@@ -36,8 +37,8 @@ fi
 
 echo "Using ${PORTS_TXT} as the list for ports to build."
 echo "Using ${BUILD_JAIL} as the build jail."
+echo "Using ${PORTS_TREE} as the ports tree."
 
-
-/usr/local/bin/poudriere bulk -f ${PORTS_TXT} -j ${BUILD_JAIL} 
+/usr/local/bin/poudriere bulk -f ${PORTS_TXT} -j ${BUILD_JAIL} -p ${PORTS_TREE} 
 
 
