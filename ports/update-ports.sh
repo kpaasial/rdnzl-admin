@@ -8,10 +8,11 @@ FLOCK=/usr/local/bin/flock
 
 : ${PORTS_TREE:="default"}
 
-while getopts c o
+while getopts "cp:" o
 do
     case "$o" in 
     c)  CRONMODE=y;;  
+    p)  PORTS_TREE=$OPTARG;;
     esac
 done
 
@@ -31,7 +32,7 @@ if ! ${FLOCK} -n 9  ; then
 fi
 
 
-PORTS_TREE_PATH=`${POUDRIERE} ports -lq -p ${PORTS_TREE} | (read name method path; echo $path)`
+PORTS_TREE_PATH=`${POUDRIERE} ports -lq | grep "^${PORTS_TREE}" | (read name method path; echo $path)`
 
 cat <<EOT
 
