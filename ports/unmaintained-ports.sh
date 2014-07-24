@@ -1,5 +1,9 @@
 #!/bin/sh --
 
+POUDRIERE="/usr/local/bin/poudriere"
 
-/usr/bin/nawk -F"|" '$6 == "ports@FreeBSD.org" {print $2}' /usr/ports/INDEX-`uname -r | cut -d'.' -f1`
+PORTS_TREE="default"
+PORTS_TREE_PATH=`${POUDRIERE} ports -lq | grep "^${PORTS_TREE}" | (read name method date time path; echo $path)`
 
+/usr/bin/find "${PORTS_TREE_PATH}" -mindepth 3 -maxdepth 3 -type f -name Makefile -exec grep -li ports@freebsd.org {} \+ | \
+    sed -e "s|^${PORTS_TREE_PATH}/\(.*/.*\)/Makefile|\1|g"  | /usr/bin/sort
