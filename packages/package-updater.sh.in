@@ -8,11 +8,11 @@ ${PKGNG} update
 
 # Fetch new UPDATING file and show
 # matching entries for installed packages
-/usr/local/sbin/fetch-updating.sh
+@@PREFIX@@/sbin/fetch-updating.sh
 
 # Update pkg-audit(8) database and show warnings
 # about currently installed packages
-/usr/local/sbin/fetch-audit.sh
+@@PREFIX@@/sbin/fetch-audit.sh
 
 # Check for updated packages 
 
