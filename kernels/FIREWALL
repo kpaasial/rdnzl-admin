@@ -78,13 +78,13 @@ nodevice  mmc
 nodevice  mmcsd
 nodevice  sdhci
 
-nodevice    agp
-nodevice    vga
-nodevice    sc
+#nodevice    agp
+#nodevice    vga
+#nodevice    sc
 
 # The new vt(9) console
-device      vt
-device      vt_vga
+#device      vt
+#device      vt_vga
 
 nodevice    cbb
 nodevice    pccard
