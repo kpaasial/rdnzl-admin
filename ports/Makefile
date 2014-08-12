@@ -3,9 +3,9 @@
 
 
 
-PREFIX=/usr/local
+PREFIX=/opt
 
-SCRIPTS= build-packages.sh unmaintained-ports.sh update-ports.sh
+SCRIPTS= build-packages.sh nostage.sh unmaintained-ports.sh update-ports.sh
 
 
 all:
