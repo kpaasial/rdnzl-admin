@@ -32,7 +32,7 @@ if ! ${FLOCK} -n 9  ; then
 fi
 
 
-PORTS_TREE_PATH=`${POUDRIERE} ports -lq | grep "^${PORTS_TREE}" | (read name method path; echo $path)`
+PORTS_TREE_PATH=`${POUDRIERE} ports -lq | grep "^${PORTS_TREE}" | (read name method date time path; echo $path)`
 
 cat <<EOT
 
