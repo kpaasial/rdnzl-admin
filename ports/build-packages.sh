@@ -2,8 +2,7 @@
 
 FLOCK=/usr/local/bin/flock
 
-
-: ${RDNZL_CONFIG:="/usr/local/etc/rdnzl-admin/rdnzl.conf"}
+: ${RDNZL_CONFIG:="/opt/etc/rdnzl-admin/rdnzl.conf"}
 
 
 if [ -f ${RDNZL_CONFIG} ]; then
