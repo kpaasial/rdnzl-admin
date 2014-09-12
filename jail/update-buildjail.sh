@@ -13,13 +13,13 @@
 # that update-host.sh hasn't been yet run to completion. 
 . rdnzl-zfs-functions.sh
 . rdnzl-svn-functions.sh
-. rdnzl-jailtools-setup.sh
+. rdnzl-sysupdate-setup.sh
 
 
 # Defaults for settings
 
 # The name of the ZFS pool
-: ${ZFS_POOL:="rdnzltank"}
+#: ${ZFS_POOL:="rdnzltank"}
 
 # Where the system sources are stored
 : ${SRC_BASEFS:="${ZFS_POOL}/DATA/src"}
@@ -126,7 +126,8 @@ fi
 # sequence in the build jail.
 # TODO: create an in_jail() function for running stuff in a jail.
 
-/usr/sbin/jexec -U root "${BUILDJAIL}" sh /upgrade2.sh
+/usr/sbin/jexec -U root "${BUILDJAIL}" sh /upgrade2.sh || \
+    { echo "Can't run upgrade2.sh in jail ${BUILDJAIL}}"; exit 1; }
 
 # Record the installed version and branch in the ZFS user properties.
 # Snapshot the build jail dataset @SVNREVISION
