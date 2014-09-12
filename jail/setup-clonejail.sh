@@ -26,18 +26,9 @@
 
 . rdnzl-zfs-functions.sh
 . rdnzl-svn-functions.sh
-. rdnzl-jailtools-setup.sh
+. rdnzl-sysupdate-setup.sh
 
 # Defaults for settings
-
-# The name of the ZFS pool
-: ${ZFS_POOL:="rdnzltank"}
-
-# Where the system sources are stored
-: ${SRC_BASEFS:="${ZFS_POOL}/DATA/src"}
-
-# Base dataset for jails
-: ${JAIL_BASEFS:="${ZFS_POOL}/DATA/jails"}
 
 : ${BRANCH:="stable"}
 
@@ -49,13 +40,14 @@
 
 # Parse command line arguments to override the defaults.
 
-while getopts "B:b:C:fv:" o
+while getopts "B:b:C:fhv:" o
 do
     case "$o" in
     B)  BASEJAIL="$OPTARG";;
     b)  BRANCH="$OPTARG";;
     C)  CLONEJAIL="$OPTARG";;
     f)  FORCE_MODE=1;;
+    h)  usage;;
     v)  BRANCHVERSION="$OPTARG";;
     *)  usage;;
     esac
@@ -143,22 +135,33 @@ if test "${SVNREVOFCLONE}" = "${SVNREVISION}"; then
     exit 1
 fi
 
-# Destroy the existing filesystem in reverse order of creation
-if rdnzl_zfs_filesystem_exists "${CLONESRCFS}"; then
-    echo "Notice: Filesystem ${CLONESRCFS} already exists."
-    echo "It will be destroyed and recreated using the new snapshot of the system sources".    
-    "${ZFS_CMD}" destroy "${CLONESRCFS}" 
-fi
-
-# Check if the CLONEJAIL dataset already exists. Note the user
-# if exists and that it is being deleted.
 # TODO: Detect the presence of a poudriere jail that uses the
 # ${CLONEJAILFS} filesystem and refuse to delete the filesystem
 # if there is one.
+
+# Destroy the existing filesystem in reverse order of creation
+# The -r flag for destroy is to make sure any snapshots are also destroyed.
+if rdnzl_zfs_filesystem_exists "${CLONESRCFS}"; then
+    echo "Notice: Filesystem ${CLONESRCFS} already exists."
+    echo "It will be destroyed and recreated using the new snapshot of the system sources".    
+    "${ZFS_CMD}" destroy -r "${CLONESRCFS}" 
+fi
+
+# Check if there's a snapshot ${CLONEJAILFS}@clean.
+# Delete it if it exists.
+#if rdnzl_zfs_snapshot_exists "${CLONEJAILFS}@clean"; then
+#    echo "Notice: Snapshot ${CLONEJAILFS}@clean exists."
+#    echo "Destroying it."    
+#    "${ZFS_CMD}" destroy "${CLONEJAILFS}@clean" 
+#fi
+
+# Check if the CLONEJAIL dataset already exists. Note the user
+# if exists and that it is being deleted.
+# The -r flag for destroy for the same reason as above.
 if rdnzl_zfs_filesystem_exists "${CLONEJAILFS}"; then
     echo "Notice: Filesystem ${CLONEJAILFS} already exists."
     echo "It will be destroyed and recreated using the new snapshot of the build jail".    
-    "${ZFS_CMD}" destroy "${CLONEJAILFS}" 
+    "${ZFS_CMD}" destroy -r "${CLONEJAILFS}" 
 fi
 
 
