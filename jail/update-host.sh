@@ -48,19 +48,10 @@ echo "PREFIX: ${PREFIX}"
 
 . "${PREFIX}/rdnzl-zfs-functions.sh"
 . "${PREFIX}/rdnzl-svn-functions.sh"
-. "${PREFIX}/rdnzl-jailtools-setup.sh"
+. "${PREFIX}/rdnzl-sysupdate-setup.sh"
 
 
 # Defaults for settings
-
-# The name of the ZFS pool
-: ${ZFS_POOL:="rdnzltank"}
-
-# Where the system sources are stored
-: ${SRC_BASEFS:="${ZFS_POOL}/DATA/src"}
-
-# Base dataset for jails
-: ${JAIL_BASEFS:="${ZFS_POOL}/DATA/jails"}
 
 : ${BRANCH:="stable"}
 
@@ -71,12 +62,13 @@ echo "PREFIX: ${PREFIX}"
 
 # Parse command line arguments to override the defaults.
 
-while getopts "B:b:fv:" o
+while getopts "B:b:fhv:" o
 do
     case "$o" in
     B)  BUILDJAIL="$OPTARG";;
     b)  BRANCH="$OPTARG";;
     f)  FORCE_MODE=1;;
+    h)  usage;;
     v)  BRANCHVERSION="$OPTARG";;
     *)  usage;;
     esac
@@ -136,24 +128,40 @@ echo "BRANCHOFSOURCES: ${BRANCHOFSOURCES}"
 # to single user mode to continue the host update with the update of 
 # world.
 
+# TODO: Switching from one branch to another should be possible too
 if test "${INSTALLED_KERNEL_REVISION}" -lt "${SVNREVISION}"; then
-    echo "Going to perform 'make installkernel' in /usr/src to install the new kernel.""
+    echo "Going to perform 'make installkernel' in /usr/src to install the new kernel."
 
     # Mount /usr/src and /usr/obj if needed
+    if ! /sbin/mount | grep -q 'on /usr/src'; then
+        /sbin/mount /usr/src
+    fi   
+
+    if ! /sbin/mount | grep -q 'on /usr/obj'; then
+        /sbin/mount /usr/obj
+    fi   
+
+    # TODO: Find a way to revert /boot/kernel* to initial state
+    # if 'make installkernel' fails midway.
 
     # Run 'make installkernel'
+    /usr/bin/make -C /usr/src installkernel || \
+        { echo "Installkernel failed"; exit 1; }
 
     # Record the revision of the newly installed kernel to ZFS user property.
+    "${ZFS_CMD}" set "${KERNELREVPROP}=${SVNREVISION}" "${ROOT_DATASET}"
+
+    # Branch as well in case it got changed
+    "${ZFS_CMD}" set "${KERNELBRANCHPROP}=${BRANCHOFSOURCES}" "${ROOT_DATASET}"
 
     # Acknowledge that the kernel got installed
     echo "Installed kernel from build that was done with sources of"
-    echo "SVN revision ${SVNREVISION}."
+    echo "Branch ${BRANCH} and SVN revision ${SVNREVISION}."
     echo "Restart to single user mode to continue update."
 
     exit 0
 fi 
 
-exit 0
 
 # If the version of the installed kernel matches the sources we are
 # probably in single user mode being run after /upgrade.sh.
@@ -164,10 +172,8 @@ exit 0
 # TODO: Find a way to verify that the world was in fact updated to 
 # SVNVERSION of the sources before this script is run.
 
-
-
-
-
-
-
+# Record the revision of the newly installed world to ZFS user property.
+"${ZFS_CMD}" set "${WORLDREVPROP}=${SVNREVISION}" "${ROOT_DATASET}"
+# And branch
+"${ZFS_CMD}" set "${WORLDBRANCHPROP}=${BRANCHOFSOURCES}" "${ROOT_DATASET}"
 
