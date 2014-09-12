@@ -39,16 +39,19 @@
 # Maybe take the path to the script from $0 and take dirname(1) of
 # it (twice), then add /share/rdznl.
 
+usage()
+{
+    echo "Usage: $0 [-h] [-B buildjail] [-b branch] [-v version]" 
+    exit 0
+}
+
+# This assumes the standard hierarchy $PREFIX/{bin|sbin|share|...}
 PREFIX=$(dirname $(dirname "$0") )
+SHARE_RDNZL="${PREFIX}/share/rdnzl"
 
-echo "PREFIX: ${PREFIX}"
-
-
-
-
-. "${PREFIX}/rdnzl-zfs-functions.sh"
-. "${PREFIX}/rdnzl-svn-functions.sh"
-. "${PREFIX}/rdnzl-sysupdate-setup.sh"
+. "${SHARE_RDNZL}/rdnzl-zfs-functions.sh"
+. "${SHARE_RDNZL}/rdnzl-svn-functions.sh"
+. "${PREFIX}/etc/rdnzl-admin/sysupdate-setup.rc"
 
 
 # Defaults for settings
