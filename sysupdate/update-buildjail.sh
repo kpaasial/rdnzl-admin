@@ -11,9 +11,19 @@
 # on the root filesystem. If they are are found to be less
 # than what is on the sources refuse to run because that means
 # that update-host.sh hasn't been yet run to completion. 
-. rdnzl-zfs-functions.sh
-. rdnzl-svn-functions.sh
-. rdnzl-sysupdate-setup.sh
+
+usage()
+{
+    echo "Usage: $0 [-h][-B buildjail] [-b branch] [-v version]" 
+    exit 0   
+}
+
+PREFIX=$(dirname $(dirname "$0") )
+SHARE_RDNZL="${PREFIX}/share/rdnzl"
+
+. "${SHARE_RDNZL}/rdnzl-zfs-functions.sh"
+. "${SHARE_RDNZL}/rdnzl-svn-functions.sh"
+. "${PREFIX}/etc/rdnzl-admin/sysupdate-setup.rc"
 
 
 # Defaults for settings
@@ -36,12 +46,13 @@
 
 # Parse command line arguments to override the defaults.
 
-while getopts "B:b:fv:" o
+while getopts "B:b:fhv:" o
 do
     case "$o" in
     B)  BUILDJAIL="$OPTARG";;
     b)  BRANCH="$OPTARG";;
     f)  FORCE_MODE=1;;
+    h)  usage;;
     v)  BRANCHVERSION="$OPTARG";;
     *)  usage;;
     esac
