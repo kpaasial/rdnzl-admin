@@ -24,9 +24,12 @@
  
 # Functions
 
-. rdnzl-zfs-functions.sh
-. rdnzl-svn-functions.sh
-. rdnzl-sysupdate-setup.sh
+PREFIX=$(dirname $(dirname "$0") )
+SHARE_RDNZL="${PREFIX}/share/rdnzl"
+
+. "${SHARE_RDNZL}/rdnzl-zfs-functions.sh"
+. "${SHARE_RDNZL}/rdnzl-svn-functions.sh"
+. "${PREFIX}/etc/rdnzl-admin/sysupdate-setup.rc"
 
 # Defaults for settings
 
