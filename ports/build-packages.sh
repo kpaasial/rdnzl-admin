@@ -1,5 +1,12 @@
 #!/bin/sh
 
+usage()
+{
+    echo "$0 [-f portsfile] [-j jail] [-p portstree]"
+    exit 0
+}
+
+
 FLOCK=/usr/local/bin/flock
 
 : ${RDNZL_CONFIG:="/opt/etc/rdnzl-admin/rdnzl.conf"}
@@ -13,12 +20,14 @@ else
 fi
 
 
-while getopts "f:j:p:" o
+while getopts "f:hj:p:" o
 do
     case "$o" in
     f)  PORTS_TXT="$OPTARG";;
+    h)  usage;;
     j)  BUILD_JAIL="$OPTARG";;
     p)  PORTS_TREE="$OPTARG";;
+    *)  usage;;
     esac
 
 done
