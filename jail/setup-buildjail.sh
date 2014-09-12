@@ -16,24 +16,20 @@
 # the update-host.sh script the build jail should be updated by
 # running the update-buildjail.sh script.
 
-# Functions
+# TODO: Write a script to automate the buildworld/buildkernel procedure.
 
 . rdnzl-zfs-functions.sh
 . rdnzl-svn-functions.sh
-. rdnzl-jailtools-setup.sh
+. rdnzl-sysupdate-setup.sh
 
-#: ${SVN_CMD:=$(which svn 2>/dev/null || which svnlite 2>/dev/null)}
+
+usage()
+{
+    echo "$0 [-hf] [-B buildjail] [-b branch] [-v version]" 
+    exit 0
+}
 
 # Defaults for settings
-
-# The name of the ZFS pool
-: ${ZFS_POOL:="rdnzltank"}
-
-# Where the system sources are stored
-: ${SRC_BASEFS:="${ZFS_POOL}/DATA/src"}
-
-# Base dataset for jails
-: ${JAIL_BASEFS:="${ZFS_POOL}/DATA/jails"}
 
 : ${BRANCH:="stable"}
 
@@ -44,12 +40,13 @@
 
 # Parse command line arguments to override the defaults.
 
-while getopts "B:b:fv:" o
+while getopts "B:b:fhv:" o
 do
     case "$o" in
     B)  BUILDJAIL="$OPTARG";;
     b)  BRANCH="$OPTARG";;
     f)  FORCE_MODE=1;;
+    h)  usage;;
     v)  BRANCHVERSION="$OPTARG";;
     *)  usage;;
     esac
@@ -82,13 +79,30 @@ SRC_SNAPSHOT="${SRC_FS}@${SVNREVISION}"
 # Base jail dataset.
 BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
 
+# Test the obvious right away, does the BUILDJAIL_FS exist.
+# If not there's no point in continuing
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAIL_FS}"; then
+    echo "No such buildjail filesystem: ${BUILDJAIL_FS}."
+    exit 1
+fi
+
+
+
 # Dataset for the cloned src tree, created under ${BUILDJAILFS}.
 # Branch and SVN revision information stored in ZFS user properties
 BUILDJAILSRC_FS="${BUILDJAIL_FS}/src"
 
+# Dataset for /usr/obj in the buildjail
+BUILDJAILOBJ_FS="${BUILDJAIL_FS}/obj"
 
-# Base part of the ZFS user properties used
-#ZFSUSERPROPBASE="info.rdnzl.jailutils"
+# Construct the mountpoint for BUILDJAILSRC_FS
+BUILDJAIL_PATH=$(rdnzl_zfs_get_property_value "${BUILDJAIL_FS}" "mountpoint")
+
+BUILDJAILSRC_PATH="${BUILDJAIL_PATH}/usr/src"
+
+# Same for BUILDJAILOBJ_FS
+BUILDJAILOBJ_PATH="${BUILDJAIL_PATH}/usr/obj"
+
 
 # Bit of debug output...
 
@@ -115,11 +129,6 @@ else
     "${ZFS_CMD}" snapshot "${SRC_SNAPSHOT}"
 fi
 
-# Construct the mountpoint for ${BUILDJAILSRC_FS}
-BUILDJAIL_PATH=$(rdnzl_zfs_get_property_value "${BUILDJAIL_FS}" "mountpoint")
-
-BUILDJAILSRC_PATH="${BUILDJAIL_PATH}/usr/src"
-
 
 # TODO: Check that BUILDJAILSRC_PATH is not a target for another
 # mount, for example a nullfs mount to the host /usr/src.
@@ -129,12 +138,12 @@ BUILDJAILSRC_PATH="${BUILDJAIL_PATH}/usr/src"
 # dataset as well.
 
 # Test if ${BUILDJAILSRC_FS} already exists.
-# TODO: Test if the new clone would be from the same SVNREVISION of the sources as the
-# existing one. Require the force mode if that is the case.
+# The -r flag for destroy is for the case there are snapshots on the dataset
+# for whatever reason.
 if rdnzl_zfs_filesystem_exists "${BUILDJAILSRC_FS}"; then
     echo "Notice: A clone of the system sources already exists at ${BUILDJAILSRC_FS}."
     echo "Destroying ${BUILDJAILSRC_FS}."
-    "${ZFS_CMD}" destroy "${BUILDJAILSRC_FS}"    
+    "${ZFS_CMD}" destroy -r "${BUILDJAILSRC_FS}"    
 fi
 
 
@@ -151,4 +160,22 @@ echo "Mountpoint: ${BUILDJAILSRC_PATH}"
     "${SRC_SNAPSHOT}" "${BUILDJAILSRC_FS}"
 
 
+
+# Destroy the jail /usr/obj dataset if it (very likely) exists.
+# This will reset the build number to #0 every time the sources
+# are updated. The -r flag for destroy for the same reason as above.
+
+# TODO: This will fail if the jail /usr/obj is in use by another
+# mount, for example nullfs mount to host /usr/obj. NFS export might
+# do the same?
+if rdnzl_zfs_filesystem_exists "${BUILDJAILOBJ_FS}"; then
+    echo "Dataset for the jail /usr/obj already exists."
+    echo "Destroying ${BUILDJAILOBJ_FS}"
+    "${ZFS_CMD}" destroy -r "${BUILDJAILOBJ_FS}"
+fi
+
+# Create a new filesystem for the jail /usr/obj directory.
+echo "Creating a new dataset for ${BUILDJAILOBJ_PATH} at ${BUILDJAILOBJ_FS}."
+"${ZFS_CMD}" create -o mountpoint="${BUILDJAILOBJ_PATH}" \
+    -o atime=off "${BUILDJAILOBJ_FS}"
 
