@@ -1,19 +1,15 @@
 #!/bin/sh --
 
-cd /usr/src || (echo "No /usr/src directory." && exit 1)
+cd /usr/src || { echo "No /usr/src directory."; exit 1; }
 
-test -f Makefile || (echo "System sources missing from /usr/src?" && exit 1)
+test -f Makefile || { echo "System sources missing from /usr/src?"; exit 1; }
 
 : ${SVN_CMD:=$(which svn 2>/dev/null || which svnlite 2>/dev/null)}
-: ${SVNVERSION_CMD:=$(which svnversion 2>/dev/null || which svnliteversion 2>/dev/null)}
 
 
-SVNVERSION="r$(${SVNVERSION_CMD})"
+SVNVERSION="$(${SVN_CMD} info . | awk '/^Revision:/ {print $2}')"
 
-
-RELATIVEURL=$( ${SVN_CMD} info . | grep '^Relative URL:' | cut -f 2 -d':')
-
-BRANCH="${RELATIVEURL# ^/}"
+BRANCH=$(${SVN_CMD} info . | awk '/^Relative URL:/ {sub(/\^\//,"", $3); print $3}')
 
 echo "SVNVERSION: $SVNVERSION"
 echo "BRANCH: $BRANCH"
