@@ -5,13 +5,6 @@
 # 'make installworld' etc. and record the installed svnrevision
 # with both ZFS user properties and a snapshot @SVNREVISION. 
 
-
-# Installed svn revisions of kernel and world should be checked
-# on the running system from the recorded ZFS user properties
-# on the root filesystem. If they are are found to be less
-# than what is on the sources refuse to run because that means
-# that update-host.sh hasn't been yet run to completion. 
-
 usage()
 {
     echo "Usage: $0 [-h][-B buildjail] [-b branch] [-v version]" 
@@ -32,10 +25,10 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 #: ${ZFS_POOL:="rdnzltank"}
 
 # Where the system sources are stored
-: ${SRC_BASEFS:="${ZFS_POOL}/DATA/src"}
+#: ${SRC_BASEFS:="${ZFS_POOL}/DATA/src"}
 
 # Base dataset for jails
-: ${JAIL_BASEFS:="${ZFS_POOL}/DATA/jails"}
+#: ${JAIL_BASEFS:="${ZFS_POOL}/DATA/jails"}
 
 : ${BRANCH:="stable"}
 
@@ -80,54 +73,14 @@ BRANCHOFSOURCES=$(rdnzl_svn_get_branch "${SRC_PATH}") || \
 BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
 
 
-# TODO: This could actually use the bootfs property of
-# of the pool
-ROOT_DATASET=$(rdnzl_zfs_filesystem_from_path "/")
-
-echo "ROOT_DATASET: ${ROOT_DATASET}"
-
-INSTALLED_KERNEL_REVISION=$(rdnzl_zfs_get_property_value "${ROOT_DATASET}" "${KERNELREVPROP}")
-INSTALLED_KERNEL_BRANCH=$(rdnzl_zfs_get_property_value "${ROOT_DATASET}" "${KERNELBRANCHPROP}")
-INSTALLED_WORLD_REVISION=$(rdnzl_zfs_get_property_value "${ROOT_DATASET}" "${WORLDREVPROP}")
-INSTALLED_WORLD_BRANCH=$(rdnzl_zfs_get_property_value "${ROOT_DATASET}" "${WORLDBRANCHPROP}")
-
-echo "INSTALLED_KERNEL_REVISION: ${INSTALLED_KERNEL_REVISION}"
-echo "INSTALLED_KERNEL_BRANCH: ${INSTALLED_KERNEL_BRANCH}"
-echo "INSTALLED_WORLD_REVISION: ${INSTALLED_WORLD_REVISION}"
-echo "INSTALLED_WORLD_BRANCH: ${INSTALLED_WORLD_BRANCH}"
-
-
-
-# Test that the installed kernel and world are of
-# the same branch and revision as the sources
-# Stop if they aren't because that would mean the host hasn't been yet updated.
-if test "${INSTALLED_KERNEL_BRANCH}" != "${BRANCHOFSOURCES}"; then
-    echo "Installed kernel branch ${INSTALLED_KERNEL_BRANCH} does not match "
-    echo "the branch of the sources, ${BRANCHOFSOURCES}"
-    exit 1
-fi
-
-if test "${INSTALLED_WORLD_BRANCH}" != "${BRANCHOFSOURCES}"; then
-    echo "Installed world branch ${INSTALLED_WORLD_BRANCH} does not match "
-    echo "the branch of the sources, ${BRANCHOFSOURCES}"
-    exit 1
-fi
-
-if test "${INSTALLED_KERNEL_REVISION}" != "${SVNREVISION}"; then
-    echo "Installed kernel revision ${INSTALLED_KERNEL_REVISION} does not match "
-    echo "the revision of the sources, ${SVNREVISION}"
-    exit 1
-fi
-
-if test "${INSTALLED_WORLD_REVISION}" != "${SVNREVISION}"; then
-    echo "Installed world revision ${INSTALLED_WORLD_REVISION} does not match "
-    echo "the revision of the sources, ${SVNREVISION}"
-    exit 1
-fi
-
+# TODO: Updating the build jail that is used to update the build
+# host should be done only after updating the build host.
+# However, update of other build jails can be done at any time.
 
 # Test if the buildjail has already been snapshotted
 # @SVNREVISION
+# TODO: Test the ZFS user properties as well, they will show
+# directly if the jail is up to date.
 if rdnzl_zfs_snapshot_exists "${BUILDJAIL_FS}@${SVNREVISION}"; then
     echo "Snapshot ${BUILDJAIL_FS}@${SVNREVISION} already exists."
     echo "Jail ${BUILDJAIL} is very likely already up to date."
