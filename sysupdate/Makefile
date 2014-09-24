@@ -5,7 +5,7 @@
 
 PREFIX=/opt
 
-SCRIPTS= setup-buildjail.sh setup-clonejail.sh update-buildjail.sh update-host.sh 
+SCRIPTS= setup-buildjail.sh setup-clonejail.sh setup-portsjail.sh update-buildjail.sh update-host.sh 
 
 CONFIGS= sysupdate-setup.rc.sample 
 
