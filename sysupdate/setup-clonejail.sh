@@ -6,8 +6,6 @@
 
 # Modifications done by poudriere should be undo before deleting
 # clones by deleting the jail with 'poudriere jail -d -j ...'
-# TODO: Detect the presence of poudriere's modifications and 
-# require -f to overwrite
 
 
 # Default dataset paths are:
@@ -15,13 +13,7 @@
 # zfspool/DATA/jails/clonejail - the created clone from basejail
 # zfspool/DATA/src/branch/version - the system sources
 
-# TODO: Configuration should come from a config file, for example
-# ${PREFIX}/etc/rdnzl-admin/rdnzl.conf
 
-# TODO: Put common functionality (with the other scripts as well)
-# into a file with functions. For example
-# ${PREFIX}/share/rdnzl-admin/jail-functions.sh
- 
 # Functions
 
 PREFIX=$(dirname $(dirname "$0") )
@@ -30,6 +22,13 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 . "${SHARE_RDNZL}/rdnzl-zfs-functions.sh"
 . "${SHARE_RDNZL}/rdnzl-svn-functions.sh"
 . "${PREFIX}/etc/rdnzl-admin/sysupdate-setup.rc"
+
+usage()
+{
+    echo "Usage: $0 [-h] [-B buildjail] [-C clonejail] [-b branch] [-v version]" 
+    exit 1
+}
+
 
 # Defaults for settings
 
@@ -58,8 +57,6 @@ do
 done
 
 shift $((OPTIND-1))
-
-
 
 
 SRC_FS="${SRC_BASEFS}/${BRANCH}/${BRANCHVERSION}"
@@ -106,12 +103,19 @@ echo "CLONESRCFS: ${CLONESRCFS}"
 # Check that the branch of the sources matches what is wanted,
 # error out if not.
 
+# TODO: This might be redundant. If the detected branch/version does not match
+# what was requested there is an error in the system sources hierarchy.
 if test "${BRANCHOFSOURCES}" != "${BRANCH}/${BRANCHVERSION}"; then
     echo "Branch and version of sources ${BRANCHOFSOURCES} does not match requested ${BRANCH}/${BRANCHVERSION}"
     exit 1
 fi
 
-#  Require that the source snapshot exists.
+# TODO: Check that we are matching sources from the right branch/version
+# to the clone jail we are about the create. In other words, match
+# BRANCHOFSOURCES to the branch of the buildjail.
+
+
+#  Require that the snapshot of the system sources exists.
 if ! rdnzl_zfs_snapshot_exists "${SRC_SNAPSHOT}"; then
     echo "Error: Snapshot ${SRC_SNAPSHOT} does not exist."
     echo "Create the source snapshot and update ${BASEJAIL} first."
@@ -125,24 +129,24 @@ if ! rdnzl_zfs_snapshot_exists "${BASEJAILFS}@${SVNREVISION}"; then
     exit 1
 fi
 
-# TODO: Update to a new version can be done without the force mode.
-# Recreating the clone jail fs using the same SVN revision build jail
-# should require the force mode.
-SVNREVOFCLONE=$(rdnzl_zfs_get_property_value "${CLONEJAILFS}" "${USERPROPBASE}:svnrevision")
 
-echo "SVNREVOFCLONE: ${SVNREVOFCLONE}"
+if rdnzl_zfs_filesystem_exists "${CLONEJAILFS}"; then
+    if $(poudriere jail -ql | grep -q "${CLONEJAIL}"); then
+        echo "A poudriere jail using the filesystem ${CLONEJAILFS} exists."
+        echo "Delete it first."
+        exit 1
+    fi
 
-
-if test "${SVNREVOFCLONE}" = "${SVNREVISION}"; then
-    echo "Replacing the clone jail with a clone of the same revision requires use of -f."
-    exit 1
 fi
 
-# TODO: Detect the presence of a poudriere jail that uses the
-# ${CLONEJAILFS} filesystem and refuse to delete the filesystem
-# if there is one.
 
-# Destroy the existing filesystem in reverse order of creation
+# Now that we know the CLONEJAILFS either does not exist
+# or if it does it's not in use by a poudriere jail we can
+# create or recreate it.
+
+# Destroy the filesystems in reverse order of creation.
+
+
 # The -r flag for destroy is to make sure any snapshots are also destroyed.
 if rdnzl_zfs_filesystem_exists "${CLONESRCFS}"; then
     echo "Notice: Filesystem ${CLONESRCFS} already exists."
@@ -150,13 +154,6 @@ if rdnzl_zfs_filesystem_exists "${CLONESRCFS}"; then
     "${ZFS_CMD}" destroy -r "${CLONESRCFS}" 
 fi
 
-# Check if there's a snapshot ${CLONEJAILFS}@clean.
-# Delete it if it exists.
-#if rdnzl_zfs_snapshot_exists "${CLONEJAILFS}@clean"; then
-#    echo "Notice: Snapshot ${CLONEJAILFS}@clean exists."
-#    echo "Destroying it."    
-#    "${ZFS_CMD}" destroy "${CLONEJAILFS}@clean" 
-#fi
 
 # Check if the CLONEJAIL dataset already exists. Note the user
 # if exists and that it is being deleted.
@@ -169,8 +166,7 @@ fi
 
 
 # Create a clone dataset from the basejail snapshot.
-# TODO: Store branch and SVN revision in ZFS user properties
-
+# TODO: Handle errors
 "${ZFS_CMD}" clone \
     -o info.rdnzl:branch="${BRANCHOFSOURCES}" \
     -o info.rdnzl:svnrevision="${SVNREVISION}" \
@@ -187,6 +183,8 @@ echo "CLONESRCPATH: ${CLONESRCPATH}"
 
 # Create the clone src dataset from the system sources snapshot.
 # This is essentially doing the same as build-jail.sh for the build jail.
+# Set the clone to be read-only.
+# TODO: Handle errors
 "${ZFS_CMD}" clone \
     -o readonly=on \
     -o mountpoint="${CLONESRCPATH}" \
