@@ -4,6 +4,6 @@ rdnzl_in_jail()
 {
     jailname="$1"
     shift
-    jexec -U root "${jailname}" "$@"
+    /usr/sbin/jexec -U root "${jailname}" "$@"
 }
 
