@@ -41,7 +41,7 @@ usage()
     exit 0
 }
 
-PREFIX="/opt"
+PREFIX="@@PREFIX@@"
 SHARE_RDNZL="${PREFIX}/share/rdnzl"
 
 . "${SHARE_RDNZL}/rdnzl-zfs-functions.sh"

@@ -20,7 +20,7 @@
 
 # Functions
 
-PREFIX="/opt"
+PREFIX="@@PREFIX@@"
 SHARE_RDNZL="${PREFIX}/share/rdnzl"
 
 . "${SHARE_RDNZL}/rdnzl-zfs-functions.sh"
