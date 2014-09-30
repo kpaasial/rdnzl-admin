@@ -18,7 +18,9 @@
 
 # TODO: Write a script to automate the buildworld/buildkernel procedure.
 
-
+# TODO: Add a way to bootstrap a buildjail (any possible branch/version
+# based on the build host version) using a release distribution or a
+# snapshot from ftp.freebsd.org. Create a new script perhaps for bootstrap.
 
 PREFIX="/opt"
 SHARE_RDNZL="${PREFIX}/share/rdnzl"
@@ -27,6 +29,11 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 . "${SHARE_RDNZL}/rdnzl-svn-functions.sh"
 . "${PREFIX}/etc/rdnzl-admin/sysupdate-setup.rc"
 
+# TODO: Require that the jail has been bootstrapped with
+# SVN branch already set. The branch should be set to stone
+# after bootstrapping. In other words it should not be possible
+# to switch to another branch in a buildjail but require that
+# the user creates a separate jail for any other branch.
 
 usage()
 {
@@ -36,34 +43,46 @@ usage()
 
 # Defaults for settings
 
-: ${BRANCH:="stable"}
+#: ${BRANCH:="stable"}
 
-: ${BRANCHVERSION:="10"}
+#: ${BRANCHVERSION:="10"}
 
 : ${BUILDJAIL:="buildstable10amd64"}
 
 
 # Parse command line arguments to override the defaults.
 
-while getopts "B:b:fhv:" o
+while getopts "B:h" o
 do
     case "$o" in
     B)  BUILDJAIL="$OPTARG";;
-    b)  BRANCH="$OPTARG";;
-    f)  FORCE_MODE=1;;
     h)  usage;;
-    v)  BRANCHVERSION="$OPTARG";;
     *)  usage;;
     esac
-
 done
 
 shift $((OPTIND-1))
 
 
+# Build jail filesystem
+BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
 
 
-SRC_FS="${SRC_BASEFS}/${BRANCH}/${BRANCHVERSION}"
+# Sanity checks
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAIL_FS}"; then
+    echo "No such buildjail filesystem ${BUILDJAIL_FS}"
+    exit 1
+fi
+
+# TODO: This should not be a fatal error, the jail might have been just bootstrapped.
+JAIL_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAIL_FS}" "${SVNREVISIONPROP}") || \
+    { echo "Can not read SVNREVISION from filesystem ${BUILDJAIL_FS}"; exit 1;}
+
+JAIL_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAIL_FS}" "${SVNBRANCHPROP}") || \
+    { echo "Can not read SVNBRANCH from filesystem ${BUILDJAIL_FS}"; exit 1;}
+
+# Force the selection of sources with JAIL_SVNBRANCH
+SRC_FS="${SRC_BASEFS}/${JAIL_SVNBRANCH}"
 
 SRC_PATH=$(rdnzl_zfs_get_property_value "${SRC_FS}" "mountpoint") || \
     { echo "No sources exist for ${BRANCH}/${BRANCHVERSION}"; exit 1;}
@@ -72,24 +91,14 @@ echo "SRC_PATH: ${SRC_PATH}"
 
  
 # SVN revision of the source tree
-
-SVNREVISION=$(rdnzl_svn_get_revision "${SRC_PATH}") || \
+SRC_SVNREVISION=$(rdnzl_svn_get_revision "${SRC_PATH}") || \
     { echo "Can't get SVN revision for ${SRC_PATH}"; exit 1;}
 
-BRANCHOFSOURCES=$(rdnzl_svn_get_branch "${SRC_PATH}") || \
+# SVN branch of the source tree
+SRC_SVNBRANCH=$(rdnzl_svn_get_branch "${SRC_PATH}") || \
     { echo "Can't get SVN branch for ${SRC_PATH}"; exit 1;}
 
-SRC_SNAPSHOT="${SRC_FS}@${SVNREVISION}"
-
-# Base jail dataset.
-BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
-
-# Test the obvious right away, does the BUILDJAIL_FS exist.
-# If not there's no point in continuing
-if ! rdnzl_zfs_filesystem_exists "${BUILDJAIL_FS}"; then
-    echo "No such buildjail filesystem: ${BUILDJAIL_FS}."
-    exit 1
-fi
+SRC_SNAPSHOT="${SRC_FS}@${SRC_SVNREVISION}"
 
 
 
@@ -101,6 +110,7 @@ BUILDJAILSRC_FS="${BUILDJAIL_FS}/src"
 BUILDJAILOBJ_FS="${BUILDJAIL_FS}/obj"
 
 # Construct the mountpoint for BUILDJAILSRC_FS
+# TODO: Use MNT instead of PATH consistently.
 BUILDJAIL_PATH=$(rdnzl_zfs_get_property_value "${BUILDJAIL_FS}" "mountpoint")
 
 BUILDJAILSRC_PATH="${BUILDJAIL_PATH}/usr/src"
@@ -111,18 +121,19 @@ BUILDJAILOBJ_PATH="${BUILDJAIL_PATH}/usr/obj"
 
 # Bit of debug output...
 
-echo "BRANCHOFSOURCES: ${BRANCHOFSOURCES}"
+echo "JAIL_SVNBRANCH: ${JAIL_SVNBRANCH}"
 
-echo "BRANCH/VERSION requested: ${BRANCH}/${BRANCHVERSION}"
+echo "JAIL_SVNREVISION: ${JAIL_SVNREVISION}"
 
-echo "SVNREVISION: ${SVNREVISION}"
+echo "SRC_SVNBRANCH: ${SRC_SVNBRANCH}"
+
+echo "SRC_SVNREVISION: ${SRC_SVNREVISION}"
 
 echo "SRC_SNAPSHOT: ${SRC_SNAPSHOT}"
 
 echo "BUILDJAIL_FS: ${BUILDJAIL_FS}"
 
 echo "BUILDJAILSRC_FS: ${BUILDJAILSRC_FS}"
-
 
 
 # Create a snapshot of the source code dataset.
@@ -156,15 +167,15 @@ fi
 
 # Create the clone src dataset from the system sources snapshot. 
 echo "Creating a new clone of the system sources from snapshot ${SRC_SNAPSHOT} at ${BUILDJAILSRC_FS}."
-echo "SVNREVISION: ${SVNREVISION}"
-echo "BRANCHOFSOURCES: ${BRANCHOFSOURCES}"
+echo "SVNREVISION: ${SRC_SVNREVISION}"
+echo "SVNBRANCH: ${SRC_SVNBRANCH}"
 echo "Mountpoint: ${BUILDJAILSRC_PATH}"
 
 # TODO: Handle errors
 "${ZFS_CMD}" clone -o mountpoint="${BUILDJAILSRC_PATH}" \
     -o readonly=on -o atime=off \
-    -o "${USERPROPBASE}:svnrevision"="${SVNREVISION}" \
-    -o "${USERPROPBASE}:branch"="${BRANCHOFSOURCES}" \
+    -o "${SVNREVISIONPROP}"="${SRC_SVNREVISION}" \
+    -o "${SVNBRANCHPROP}"="${SRC_SVNBRANCH}" \
     "${SRC_SNAPSHOT}" "${BUILDJAILSRC_FS}"
 
 
@@ -183,6 +194,7 @@ if rdnzl_zfs_filesystem_exists "${BUILDJAILOBJ_FS}"; then
 fi
 
 # Create a new filesystem for the jail /usr/obj directory.
+# Don't set the user properties yet since the FS is still empty
 # TODO: Handle errors
 echo "Creating a new dataset for ${BUILDJAILOBJ_PATH} at ${BUILDJAILOBJ_FS}."
 "${ZFS_CMD}" create -o mountpoint="${BUILDJAILOBJ_PATH}" \
