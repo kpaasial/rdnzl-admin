@@ -16,10 +16,6 @@
 # the update-host.sh script the build jail should be updated by
 # running the update-buildjail.sh script.
 
-# TODO: I have a feeling this should be called something else. This
-# doesn't quite "set up" a build jail but does the set up of new
-# sources for building a new set of object files to be used for updates.
-
 # TODO: Write a script to automate the buildworld/buildkernel procedure.
 
 # TODO: Add a way to bootstrap a buildjail (any possible branch/version
@@ -37,7 +33,7 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 
 usage()
 {
-    echo "$0 [-hf] [-B buildjail] [-b branch] [-v version]" 
+    echo "$0 [-hf] [-B buildjail]" 
     exit 0
 }
 
