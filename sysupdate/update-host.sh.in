@@ -35,12 +35,6 @@
 
 # Include common functions and settings
 
-usage()
-{
-    echo "Usage: $0 [-h] [-B buildjail] [-b branch] [-v version]" 
-    exit 0
-}
-
 PREFIX="@@PREFIX@@"
 SHARE_RDNZL="${PREFIX}/share/rdnzl"
 
@@ -49,25 +43,24 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 . "${PREFIX}/etc/rdnzl-admin/sysupdate-setup.rc"
 
 
+usage()
+{
+    echo "Usage: $0 [-h] [-B buildjail] " 
+    exit 0
+}
+
 # Defaults for settings
-
-: ${BRANCH:="stable"}
-
-: ${BRANCHVERSION:="10"}
 
 : ${BUILDJAIL:="buildstable10amd64"}
 
 
 # Parse command line arguments to override the defaults.
 
-while getopts "B:b:fhv:" o
+while getopts "B:h" o
 do
     case "$o" in
     B)  BUILDJAIL="$OPTARG";;
-    b)  BRANCH="$OPTARG";;
-    f)  FORCE_MODE=1;;
     h)  usage;;
-    v)  BRANCHVERSION="$OPTARG";;
     *)  usage;;
     esac
 
@@ -75,29 +68,41 @@ done
 
 shift $((OPTIND-1))
 
-# Read the SVN revision of the sources
+# Read the SVN revision from the buildjail
 
-SRC_FS="${SRC_BASEFS}/${BRANCH}/${BRANCHVERSION}"
+BUILDJAILSRC_FS="${JAIL_BASEFS}/${BUILDJAIL}/src"
+BUILDJAILOBJ_FS="${JAIL_BASEFS}/${BUILDJAIL}/obj"
 
-SRC_PATH=$(rdnzl_zfs_get_property_value "${SRC_FS}" mountpoint) || \
-    { echo "No sources exist for ${BRANCH}/${BRANCHVERSION}"; exit 1;}
 
-# SVN revision of the source tree
-SVNREVISION=$(rdnzl_svn_get_revision "${SRC_PATH}") || \
-    { echo "Can't get SVN revision for ${SRC_PATH}"; exit 1;}
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAILSRC_FS}"; then
+    echo "No such buildjail src filesystem ${BUILDJAILSRC_FS}"
+    exit 1
+fi
 
-BRANCHOFSOURCES=$(rdnzl_svn_get_branch "${SRC_PATH}") || \
-    { echo "Can't get SVN branch for ${SRC_PATH}"; exit 1;}
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAILOBJ_FS}"; then
+    echo "No such buildjail obj filesystem ${BUILDJAILOBJ_FS}"
+    exit 1
+fi
 
 
 # TODO: Record the SVN revision of the finished build into
-# ${BUILDJAILFS}/obj. Use the recorded revision to detect if
-# the objects have already been used with 'make installkernel'
-# and 'make installworld'
+# ${BUILDJAILFS}/obj. Use the recorded revision to detect if buildworld
+# and buildkernel have been done with the sources or not.
+
+SRC_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAILSRC_FS}" "${SVNREVISIONPROP}") || \
+    { echo "Can not read SVNREVISION from filesystem ${BUILDJAILSRC_FS}"; exit 1;}
+
+SRC_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAILSRC_FS}" "${SVNBRANCHPROP}") || \
+    { echo "Can not read SVNBRANCH from filesystem ${BUILDJAILSRC_FS}"; exit 1;}
 
 
-# TODO: This could actually use the bootfs property of
-# of the pool
+OBJ_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "${SVNREVISIONPROP}") || \
+    { echo "Can not read SVNREVISION from filesystem ${BUILDJAILOBJ_FS}"; exit 1;}
+
+OBJ_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "${SVNBRANCHPROP}") || \
+    { echo "Can not read SVNBRANCH from filesystem ${BUILDJAILOBJ_FS}"; exit 1;}
+
+
 ROOT_DATASET=$(rdnzl_zfs_filesystem_from_path "/")
 
 echo "ROOT_DATASET: ${ROOT_DATASET}"
@@ -116,12 +121,12 @@ echo "INSTALLED_KERNEL_BRANCH: ${INSTALLED_KERNEL_BRANCH}"
 echo "INSTALLED_WORLD_REVISION: ${INSTALLED_WORLD_REVISION}"
 echo "INSTALLED_WORLD_BRANCH: ${INSTALLED_WORLD_BRANCH}"
 echo "SVNREVISION: ${SVNREVISION}"
-echo "BRANCHOFSOURCES: ${BRANCHOFSOURCES}"
+echo "BRANCH: ${SVNBRANCH}"
 
-
-# Compare the SVN revisions of the sources and installed kernel.
+exit 0
+# Compare the SVN revisions of the buildjail /usr/obj and installed kernel.
 # If the installed kernel revision is less than the revision of the
-# sources perform 'make installkernel', record the new revision in
+# buildjail /usr/obj perform 'make installkernel', record the new revision in
 # ZFS user properties and exit. Instruct the user to shutdown and reboot
 # to single user mode to continue the host update with the update of 
 # world.
@@ -131,6 +136,7 @@ if test "${INSTALLED_KERNEL_REVISION}" -lt "${SVNREVISION}"; then
     echo "Going to perform 'make installkernel' in /usr/src to install the new kernel."
 
     # Mount /usr/src and /usr/obj if needed
+    # TODO: Don't rely on /etc/fstab, use paths to the buildjail filesystems.
     if ! /sbin/mount | grep -q 'on /usr/src'; then
         /sbin/mount /usr/src
     fi   
@@ -147,14 +153,14 @@ if test "${INSTALLED_KERNEL_REVISION}" -lt "${SVNREVISION}"; then
         { echo "Installkernel failed"; exit 1; }
 
     # Record the revision of the newly installed kernel to ZFS user property.
-    "${ZFS_CMD}" set "${KERNELREVPROP}=${SVNREVISION}" "${ROOT_DATASET}"
+    "${ZFS_CMD}" set "${KERNELSVNREVISIONPROP}=${OBJ_SVNREVISION}" "${ROOT_DATASET}"
 
     # Branch as well in case it got changed
-    "${ZFS_CMD}" set "${KERNELBRANCHPROP}=${BRANCHOFSOURCES}" "${ROOT_DATASET}"
+    "${ZFS_CMD}" set "${KERNELSVNBRANCHPROP}=${OBJ_SVNBRANCH}" "${ROOT_DATASET}"
 
     # Acknowledge that the kernel got installed
     echo "Installed kernel from build that was done with sources of"
-    echo "branch ${BRANCH}/${BRANCHVERSION} and SVN revision ${SVNREVISION}."
+    echo "branch ${OBJ_SVNBRANCH} and SVN revision ${OBJ_SVNREVISION}."
     echo "Restart to single user mode to continue update."
 
     exit 0
@@ -171,10 +177,10 @@ fi
 # SVNVERSION of the sources before this script is run.
 
 # Record the revision of the newly installed world to ZFS user property.
-"${ZFS_CMD}" set "${WORLDREVPROP}=${SVNREVISION}" "${ROOT_DATASET}"
+"${ZFS_CMD}" set "${SVNREVISIONPROP}=${OBJ_SVNREVISION}" "${ROOT_DATASET}"
 # And branch
-"${ZFS_CMD}" set "${WORLDBRANCHPROP}=${BRANCHOFSOURCES}" "${ROOT_DATASET}"
+"${ZFS_CMD}" set "${SVNBRANCHPROP}=${OBJ_SVNBRANCH}" "${ROOT_DATASET}"
 
-echo "Recorded installed world as branch ${BRANCHOFSOURCES} and SVN revision ${SVNREVISION}"
+echo "Recorded installed world as branch ${OBJ_SVNBRANCH} and SVN revision ${OBJ_SVNREVISION}"
 
 exit 0
