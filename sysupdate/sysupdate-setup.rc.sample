@@ -1,4 +1,8 @@
 # Some common settings that don't depend on anything else
+# TODO: There should be reasonable and working defaults even if this
+# file is missing. Maybe use PREFIX/etc/defaults/sysupdate-setup.rc
+# for that and then let the user override defaults if needed using
+# PREFIX/etc/sysupdate-setup.rc.
 
 # The name of the ZFS pool.
 ZFS_POOL="zrdnzltank"
@@ -13,8 +17,11 @@ SRC_BASEFS="${ZFS_POOL}/DATA/src"
 # Basis for the ZFS user properties used.
 USERPROPBASE="info.rdnzl"
 
-KERNELREVPROP="${USERPROPBASE}:kernelsvnrevision"
-KERNELBRANCHPROP="${USERPROPBASE}:kernelbranch"
-WORLDREVPROP="${USERPROPBASE}:worldsvnrevision"
-WORLDBRANCHPROP="${USERPROPBASE}:worldbranch"
+# Used only on a real host with ZFS root filesystem
+KERNELSVNREVISIONPROP="${USERPROPBASE}:kernelsvnrevision"
+KERNELSVNBRANCHPROP="${USERPROPBASE}:kernelsvnbranch"
+
+# Used all around to mark the SVN revision of sources and installed world.
+SVNREVISIONPROP="${USERPROPBASE}:svnrevision"
+SVNBRANCHPROP="${USERPROPBASE}:svnbranch"
 
