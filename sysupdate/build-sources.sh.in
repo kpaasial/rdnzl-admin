@@ -80,7 +80,7 @@ OBJ_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "${SVNBRANCHPR
     { echo "Can not read SVNBRANCH from filesystem ${BUILDJAILOBJ_FS}"; exit 1;}
 
 # All the branches should be the same if everything was done correctly by the
-# previous scripts.
+# previous scripts. This error should never happen though...
 if test "${SRC_SVNBRANCH}" !=  "${OBJ_SVNBRANCH}"; then
     echo "Branch of sources ${SRC_SVNBRANCH} does not match the branch of the objects ${OBJ_SVNBRANCH}."
     echo "Check your setup."
@@ -91,10 +91,21 @@ fi
 # Only the SVNREVISIONS should differ. If the sources have higher SVNREVISION
 # than the objects we will launch 'make buildworld buildkernel' in the
 # buildjail.
-# TODO: What if the user really wants to go backwards in revisions?
+# TODO: What if the user really wants to go backwards in revisions or rebuild
+# using the same revision? Require -f flag probably...
 
 if test "${SRC_SVNREVISION}" -gt "${OBJ_SVNREVISION}"; then
     echo "Sources at buildjail ${BUILDJAIL} are newer than the objects."
     echo "Launching 'make buildworld buildkernel'"
 
+    # TODO: Configure -j # automatically.
+    # TODO: Set up automatic logging of builds and installs.
+    # TODO: Handle errors from the build.
+    rdnzl_in_jail "${BUILDJAIL}" /usr/bin/make -C /usr/src -j 4 \
+        buildworld buildkernel || \
+    { echo "'make buildworld buildkernel' failed."; exit 1;}
+
+    # Record the new SVNREVISION (of the sources used) to the buildjail /usr/obj filesystem
+    "${ZFS_CMS}" set "${SVNREVISIONPROP}=${SRC_SVNREVISION}" \
+        "${BUILDJAILOBJ_FS}"
 fi
