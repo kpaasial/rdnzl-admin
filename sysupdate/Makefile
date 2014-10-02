@@ -1,11 +1,13 @@
 
 
+.SUFFIXES   : .sh .sh.in
 
-
+.sh.in.sh   :
+	sed -e "s|@@PREFIX@@|${PREFIX}|g" <${.ALLSRC} >${.TARGET}
 
 PREFIX=/opt
 
-SCRIPTS= setup-buildjail.sh setup-portsjail.sh update-buildjail.sh update-host.sh 
+SCRIPTS= bootstrap-buildjail.sh build-sources.sh new-sources.sh setup-portsjail.sh update-buildjail.sh update-host.sh 
 
 CONFIGS= sysupdate-setup.rc.sample 
 
@@ -22,15 +24,17 @@ install-configs: ${CONFIGS}
 	${INSTALL} -o root -g wheel -m 444 $> ${DESTDIR}${PREFIX}/etc/rdnzl-admin
 
 
+bootstrap-buildjail.sh: bootstrap-buildjail.sh.in
 
-setup-buildjail.sh: setup-buildjail.sh.in
-	sed -e "s|@@PREFIX@@|${PREFIX}|g" <${.ALLSRC} >${.TARGET}
+build-sources.sh: build-sources.sh.in
+
+new-sources.sh: new-sources.sh.in
 
 setup-portsjail.sh: setup-portsjail.sh.in
-	sed -e "s|@@PREFIX@@|${PREFIX}|g" <${.ALLSRC} >${.TARGET}
 
 update-buildjail.sh: update-buildjail.sh.in
-	sed -e "s|@@PREFIX@@|${PREFIX}|g" <${.ALLSRC} >${.TARGET}
 
 update-host.sh: update-host.sh.in
-	sed -e "s|@@PREFIX@@|${PREFIX}|g" <${.ALLSRC} >${.TARGET}
+
+clean:
+	-rm ${SCRIPTS}
