@@ -9,16 +9,12 @@
 # under the build jail hierarchy (for example /data/jails/buildjail/mnt)
 # and run 'make installworld distrib-dirs distribute DB_FROM_SRC=1'
 # inside the buildjail with DESTDIR set to /mnt (inside the jail).
-# This will install a completely clean world every time the
-# poudriere jail is updated.
+# This will install a completely clean world to the new portsjail.
 
 # System sources are ZFS cloned to jail /usr/src using the snapshot of the
 # sources @SVNREVISION.
 
-# TODO: Verify that the build jail we are about to use can be actually used
-# for installing world of the proper branch and version.
-
-# Functions
+# TODO: Remove debug prints. Add proper notices where appropriate. 
 
 PREFIX="@@PREFIX@@"
 SHARE_RDNZL="${PREFIX}/share/rdnzl"
@@ -30,16 +26,12 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 
 usage()
 {
-    echo "Usage: $0 [-h] [-B buildjail] [-P portsjail] [-b branch] [-v version]" 
+    echo "Usage: $0 [-h] [-B buildjail] [-P portsjail]" 
     exit 1
 }
 
 
 # Defaults for settings
-
-: ${BRANCH:="stable"}
-
-: ${BRANCHVERSION:="10"}
 
 : ${BUILDJAIL:="buildstable10amd64"}
 
@@ -47,15 +39,12 @@ usage()
 
 # Parse command line arguments to override the defaults.
 
-while getopts "B:b:fhP:v:" o
+while getopts "B:hP:" o
 do
     case "$o" in
     B)  BUILDJAIL="$OPTARG";;
-    b)  BRANCH="$OPTARG";;
-    f)  FORCE_MODE=1;;
     h)  usage;;
     P)  PORTSJAIL="$OPTARG";;
-    v)  BRANCHVERSION="$OPTARG";;
     *)  usage;;
     esac
 
@@ -64,82 +53,74 @@ done
 shift $((OPTIND-1))
 
 
-SRC_FS="${SRC_BASEFS}/${BRANCH}/${BRANCHVERSION}"
+# SVNBRANCH and SVNREVISION are fixed by build-sources.sh into the
+# /usr/obj filesystem of the buildjail. They are read here from that
+# filesystem. 
 
-SRC_PATH=$(rdnzl_zfs_get_property_value "${SRC_FS}" "mountpoint") || \
-    { echo "No sources exist for ${BRANCH}/${BRANCHVERSION}"; exit 1;}
+# Read the SVN revisions from the buildjail filesystems
 
-# SVN revision of the source tree
-SVNREVISION=$(rdnzl_svn_get_revision "${SRC_PATH}") || \
-    { echo "Can't get SVN revision for ${SRC_PATH}"; exit 1;}
-
-BRANCHOFSOURCES=$(rdnzl_svn_get_branch "${SRC_PATH}") || \
-    { echo "Can't get SVN branch for ${SRC_PATH}"; exit 1;}
-
-SRC_SNAPSHOT="${SRC_FS}@${SVNREVISION}"
-
-# Base jail dataset.
 BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
+BUILDJAILSRC_FS="${BUILDJAIL_FS}/src"
+BUILDJAILOBJ_FS="${BUILDJAIL_FS}/obj"
 
 
-# Dataset for the ports jail
-PORTSJAIL_FS="${JAIL_BASEFS}/${PORTSJAIL}"
-
-
-# Bit of debug output...
-
-echo "BRANCHOFSOURCES: ${BRANCHOFSOURCES}"
-
-echo "BRANCH/VERSION requested: ${BRANCH}/${BRANCHVERSION}"
-
-echo "SVNREVISION: ${SVNREVISION}"
-
-echo "BASEJAIL_FS: ${BASEJAIL_FS}"
-
-echo "PORTSJAIL_FS: ${PORTSJAIL_FS}"
-
-
-
-
-# Check that the branch of the sources matches what is wanted,
-# error out if not.
-
-# TODO: This might be redundant. If the detected branch/version does not match
-# what was requested there is an error in the system sources hierarchy.
-if test "${BRANCHOFSOURCES}" != "${BRANCH}/${BRANCHVERSION}"; then
-    echo "Branch and version of sources ${BRANCHOFSOURCES} does not match requested ${BRANCH}/${BRANCHVERSION}"
+# Sanity checks
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAIL_FS}"; then
+    echo "No such buildjail filesystem ${BUILDJAIL_FS}"
     exit 1
 fi
 
-# TODO: Check that we are matching sources from the right branch/version
-# to the ports jail we are about the create. In other words, match
-# BRANCHOFSOURCES to the branch of the buildjail.
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAILSRC_FS}"; then
+    echo "No such buildjail src filesystem ${BUILDJAILSRC_FS}"
+    exit 1
+fi
+
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAILOBJ_FS}"; then
+    echo "No such buildjail obj filesystem ${BUILDJAILOBJ_FS}"
+    exit 1
+fi
+
+
+
+SRC_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAILSRC_FS}" "${SVNREVISIONPROP}") || \
+    { echo "Can not read SVNREVISION from filesystem ${BUILDJAILSRC_FS}"; exit 1;}
+
+OBJ_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "${SVNREVISIONPROP}") || \
+    { echo "Can not read SVNREVISION from filesystem ${BUILDJAILOBJ_FS}"; exit 1;}
+
+# We actually need this to know which branch we are installing to the new portsjail.
+OBJ_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "${SVNBRANCHPROP}") || \
+    { echo "Can not read SVNBRANCH from filesystem ${BUILDJAILOBJ_FS}"; exit 1;}
+
+# Have the sources been used for 'make buildworld etc.'?
+if test "${OBJ_SVNREVISION}" -lt "${SRC_SVNREVISION}"; then
+    echo "OBJ_SVNREVISION is lesser than SRC_SVNREVISION."
+    echo "Have buildworld and buildkernel been run in buildjail yet?"
+    exit 1
+fi
+
+# Dataset for the new portsjail
+PORTSJAIL_FS="${JAIL_BASEFS}/${PORTSJAIL}"
+
+# This is needed for cloning of the system sources to portsjail /usr/src.
+SRC_FS="${SRC_BASEFS}/${OBJ_SVNBRANCH}"
+
+SRC_SNAPSHOT="${SRC_FS}@${OBJ_SVNREVISION}"
 
 
 #  Require that the snapshot of the system sources exists.
 if ! rdnzl_zfs_snapshot_exists "${SRC_SNAPSHOT}"; then
-    echo "Error: Snapshot ${SRC_SNAPSHOT} does not exist."
+    echo "Error: System sources snapshot ${SRC_SNAPSHOT} does not exist."
     exit 1
 fi
 
 
-# Test if the ports jail filesystem exists and
-# Refuse to recreate it if there's a poudriere jail
-# that uses it.
-if rdnzl_zfs_filesystem_exists "${PORTSJAIL_FS}"; then
-    if $(poudriere jail -ql | grep -q "${PORTSJAIL}"); then
-        echo "A poudriere jail using the filesystem ${PORTSJAIL_FS} exists."
-        echo "Delete it first."
-        exit 1
-    fi
-
-fi
-
-
-
 # Check if the PORTSJAIL dataset already exists. Note the user
-# if exists and that it is being deleted.
-# The -r flag for destroy is for any snapshots such as @clean.
+# if exists and that it is being deleted. The -r flag for destroy 
+# is for any snapshots such as @clean and the src child fs.
+# Note: If there is a poudriere jail (or anything else that requires
+# dismantling) on the filesystem this script will not know that,
+# it's for the user of this script to handle.
 if rdnzl_zfs_filesystem_exists "${PORTSJAIL_FS}"; then
     echo "Notice: Filesystem ${PORTSJAIL_FS} already exists."
     echo "It will be destroyed and recreated."   
@@ -148,22 +129,26 @@ fi
 
 
 # First (re)create the ${PORTSJAILFS}
+# Here we do need OBJ_SVNBRANCH, nothing to inherit the SVNBRANCH from.
+# Both properties have to be set explicitly here.
 "${ZFS_CMD}" create \
-    -o info.rdnzl:branch="${BRANCHOFSOURCES}" \
-    -o info.rdnzl:svnrevision="${SVNREVISION}" \
+    -o "${SVNBRANCHPROP}"="${OBJ_SVNBRANCH}" \
+    -o "${SVNREVISIONPROP}"="${OBJ_SVNREVISION}" \
     "${PORTSJAIL_FS}"
 
 
-# Get the mountpoints of the buildjail and the ports jail
+# Get the mountpoints of the buildjail and the portsjail.
 BUILDJAIL_MNT=$(rdnzl_zfs_get_property_value "${BUILDJAIL_FS}" "mountpoint")
-
-
 PORTSJAIL_MNT=$(rdnzl_zfs_get_property_value "${PORTSJAIL_FS}" "mountpoint")
 
 # Then mount the new ports jail under ${BUILDJAILFS}/mnt 
+# TODO: Use a temporary random directory instead of /mnt to avoid collisions
+# with other tools.
+
 "${ZFS_CMD}" set mountpoint="${BUILDJAIL_MNT}/mnt" "${PORTSJAIL_FS}"
 
 # Run 'make installworld' etc in the buildjail 
+# TODO: Handle errors.
 rdnzl_in_jail "${BUILDJAIL}" \
     /usr/bin/make -C /usr/src installworld DESTDIR=/mnt DB_FROM_SRC=1
 
@@ -175,6 +160,7 @@ rdnzl_in_jail "${BUILDJAIL}" \
 
 
 # Reset mountpoint of PORTSJAIL_FS to the default
+# to mount it in its final destination.
 
 "${ZFS_CMD}" inherit mountpoint "${PORTSJAIL_FS}"
 
@@ -182,20 +168,18 @@ rdnzl_in_jail "${BUILDJAIL}" \
 
 PORTSJAILSRC_MNT="${PORTSJAIL_MNT}/usr/src"
 
-echo "PORTSJAILSRC_MNT: ${PORTSJAILSRC_MNT}"
-
 # Create the clone src dataset from the system sources snapshot.
 # Set the clone to be read-only.
+# No need to set the user properties, they will be inherited
+# correctly from the PORTSJAIL_FS.
 # TODO: Handle errors
 "${ZFS_CMD}" clone \
     -o readonly=on \
     -o mountpoint="${PORTSJAILSRC_MNT}" \
-    -o info.rdnzl:branch="${BRANCHOFSOURCES}" \
-    -o info.rdnzl:svnrevision="${SVNREVISION}" \
      "${SRC_SNAPSHOT}" "${PORTSJAIL_FS}/src"
 
 # Extra bit of setup for the new jail
-/usr/sbin/tzsetup -C "${PORTSJAIL_MNT}" "${JAIL_TIMEZONE}"
+/bin/cp /etc/localtime  "${PORTSJAIL_MNT}/etc/localtime"
 
 # TODO: Maybe some more extra set up is needed, not known at the moment.
 
