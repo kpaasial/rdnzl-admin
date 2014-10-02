@@ -78,19 +78,19 @@ JAIL_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAIL_FS}" "${SVNBRANCHPROP
 # Force the selection of sources with JAIL_SVNBRANCH
 SRC_FS="${SRC_BASEFS}/${JAIL_SVNBRANCH}"
 
-SRC_PATH=$(rdnzl_zfs_get_property_value "${SRC_FS}" "mountpoint") || \
+SRC_MNT=$(rdnzl_zfs_get_property_value "${SRC_FS}" "mountpoint") || \
     { echo "No sources exist for ${BRANCH}/${BRANCHVERSION}"; exit 1;}
 
-echo "SRC_PATH: ${SRC_PATH}"
+echo "SRC_MNT: ${SRC_MNT}"
 
  
 # SVN revision of the source tree
-SRC_SVNREVISION=$(rdnzl_svn_get_revision "${SRC_PATH}") || \
-    { echo "Can't get SVN revision for ${SRC_PATH}"; exit 1;}
+SRC_SVNREVISION=$(rdnzl_svn_get_revision "${SRC_MNT}") || \
+    { echo "Can't get SVN revision for ${SRC_MNT}"; exit 1;}
 
 # SVN branch of the source tree
-SRC_SVNBRANCH=$(rdnzl_svn_get_branch "${SRC_PATH}") || \
-    { echo "Can't get SVN branch for ${SRC_PATH}"; exit 1;}
+SRC_SVNBRANCH=$(rdnzl_svn_get_branch "${SRC_MNT}") || \
+    { echo "Can't get SVN branch for ${SRC_MNT}"; exit 1;}
 
 SRC_SNAPSHOT="${SRC_FS}@${SRC_SVNREVISION}"
 
@@ -104,13 +104,12 @@ BUILDJAILSRC_FS="${BUILDJAIL_FS}/src"
 BUILDJAILOBJ_FS="${BUILDJAIL_FS}/obj"
 
 # Construct the mountpoint for BUILDJAILSRC_FS
-# TODO: Use MNT instead of PATH consistently.
-BUILDJAIL_PATH=$(rdnzl_zfs_get_property_value "${BUILDJAIL_FS}" "mountpoint")
+BUILDJAIL_MNT=$(rdnzl_zfs_get_property_value "${BUILDJAIL_FS}" "mountpoint")
 
-BUILDJAILSRC_PATH="${BUILDJAIL_PATH}/usr/src"
+BUILDJAILSRC_MNT="${BUILDJAIL_MNT}/usr/src"
 
 # Same for BUILDJAILOBJ_FS
-BUILDJAILOBJ_PATH="${BUILDJAIL_PATH}/usr/obj"
+BUILDJAILOBJ_MNT="${BUILDJAIL_MNT}/usr/obj"
 
 
 # Bit of debug output...
@@ -141,7 +140,7 @@ else
 fi
 
 
-# TODO: Check that BUILDJAILSRC_PATH is not a target for another
+# TODO: Check that BUILDJAILSRC_MNT is not a target for another
 # mount, for example a nullfs mount to the host /usr/src.
 # On that note, /usr/src and /usr/obj that are used to update the host
 # could be clones as well so that their contents can be controlled.
@@ -163,10 +162,10 @@ fi
 echo "Creating a new clone of the system sources from snapshot ${SRC_SNAPSHOT} at ${BUILDJAILSRC_FS}."
 echo "SVNREVISION: ${SRC_SVNREVISION}"
 echo "SVNBRANCH: ${SRC_SVNBRANCH}"
-echo "Mountpoint: ${BUILDJAILSRC_PATH}"
+echo "Mountpoint: ${BUILDJAILSRC_MNT}"
 
 # TODO: Handle errors
-"${ZFS_CMD}" clone -o mountpoint="${BUILDJAILSRC_PATH}" \
+"${ZFS_CMD}" clone -o mountpoint="${BUILDJAILSRC_MNT}" \
     -o readonly=on -o atime=off \
     -o "${SVNREVISIONPROP}"="${SRC_SVNREVISION}" \
     "${SRC_SNAPSHOT}" "${BUILDJAILSRC_FS}"
@@ -191,8 +190,8 @@ fi
 # TODO: Handle errors
 # TODO: The properties actually get inherited from BUILDJAIL_FS. Try
 # finding a way to avoid this (if it causes problems).
-echo "Creating a new dataset for ${BUILDJAILOBJ_PATH} at ${BUILDJAILOBJ_FS}."
-"${ZFS_CMD}" create -o mountpoint="${BUILDJAILOBJ_PATH}" \
+echo "Creating a new dataset for ${BUILDJAILOBJ_MNT} at ${BUILDJAILOBJ_FS}."
+"${ZFS_CMD}" create -o mountpoint="${BUILDJAILOBJ_MNT}" \
     -o atime=off "${BUILDJAILOBJ_FS}"
 
 # TODO: Force mountd to reload its view of the exported filesystems in case
