@@ -5,9 +5,12 @@
 # 'make installworld' etc. and record the installed svnrevision
 # with both ZFS user properties and a snapshot @SVNREVISION. 
 
+
+# TODO: Remove debug prints. Add proper notices where appropriate. 
+
 usage()
 {
-    echo "Usage: $0 [-h][-B buildjail] [-b branch] [-v version]" 
+    echo "Usage: $0 [-h][-B buildjail]" 
     exit 0   
 }
 
@@ -22,23 +25,16 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 
 # Defaults for settings
 
-: ${BRANCH:="stable"}
-
-: ${BRANCHVERSION:="10"}
-
 : ${BUILDJAIL:="buildstable10amd64"}
 
 
 # Parse command line arguments to override the defaults.
 
-while getopts "B:b:fhv:" o
+while getopts "B:h" o
 do
     case "$o" in
     B)  BUILDJAIL="$OPTARG";;
-    b)  BRANCH="$OPTARG";;
-    f)  FORCE_MODE=1;;
     h)  usage;;
-    v)  BRANCHVERSION="$OPTARG";;
     *)  usage;;
     esac
 
@@ -47,22 +43,52 @@ done
 shift $((OPTIND-1))
 
 
+# SVNBRANCH is a fixed property and can not be changed.
+# Only SVNREVISION gets updated
+ 
 
-
-SRC_FS="${SRC_BASEFS}/${BRANCH}/${BRANCHVERSION}"
-
-SRC_PATH=$(rdnzl_zfs_get_property_value "${SRC_FS}" mountpoint) || \
-    { echo "No sources exist for ${BRANCH}/${BRANCHVERSION}"; exit 1;}
-
-# SVN revision of the source tree
-SVNREVISION=$(rdnzl_svn_get_revision "${SRC_PATH}") || \
-    { echo "Can't get SVN revision for ${SRC_PATH}"; exit 1;}
-
-BRANCHOFSOURCES=$(rdnzl_svn_get_branch "${SRC_PATH}") || \
-    { echo "Can't get SVN branch for ${SRC_PATH}"; exit 1;}
-
-# Build jail
+# Build jail filesystems
 BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
+BUILDJAILSRC_FS="${BUILDJAIL_FS}/src"
+BUILDJAILOBJ_FS="${BUILDJAIL_FS}/obj"
+
+
+
+# Sanity checks
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAIL_FS}"; then
+    echo "No such buildjail filesystem ${BUILDJAIL_FS}"
+    exit 1
+fi
+
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAILSRC_FS}"; then
+    echo "No such buildjail src filesystem ${BUILDJAILSRC_FS}"
+    exit 1
+fi
+
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAILOBJ_FS}"; then
+    echo "No such buildjail src filesystem ${BUILDJAILOBJ_FS}"
+    exit 1
+fi
+
+
+SRC_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAILSRC_FS}" "${SVNREVISIONPROP}") || \
+    { echo "Can not read SVNREVISION from filesystem ${BUILDJAILSRC_FS}"; exit 1;}
+
+#SRC_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAILSRC_FS}" "${SVNBRANCHPROP}") || \
+#    { echo "Can not read SVNBRANCH from filesystem ${BUILDJAILSRC_FS}"; exit 1;}
+
+OBJ_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "${SVNREVISIONPROP}") || \
+    { echo "Can not read SVNREVISION from filesystem ${BUILDJAILOBJ_FS}"; exit 1;}
+
+#OBJ_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "${SVNBRANCHPROP}") || \
+#    { echo "Can not read SVNBRANCH from filesystem ${BUILDJAILOBJ_FS}"; exit 1;}
+
+
+if test "${OBJ_SVNREVISION}" -lt "${SRC_SVNREVISION}"; then
+    echo "OBJ_SVNREVISION is lesser than SRC_SVNREVISION."
+    echo "Has buildworld and buildkernel been run in buildjail yet?"
+    exit 1
+fi
 
 
 # TODO: Updating the build jail that is used to update the build
@@ -70,23 +96,21 @@ BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
 # However, update of other build jails can be done at any time.
 
 
-# TODO: Running this on an upto date build jail won't work
-# probably because the snapshot @SVNREVISION will very likely 
-# have a dependent clone.
-
 # Test if the buildjail has already been snapshotted
 # @SVNREVISION
 # TODO: Test the ZFS user properties as well, they will show
 # directly if the jail is up to date.
-if rdnzl_zfs_snapshot_exists "${BUILDJAIL_FS}@${SVNREVISION}"; then
-    echo "Snapshot ${BUILDJAIL_FS}@${SVNREVISION} already exists."
+if rdnzl_zfs_snapshot_exists "${BUILDJAIL_FS}@${OBJ_SVNREVISION}"; then
+    echo "Snapshot ${BUILDJAIL_FS}@${OBJ_SVNREVISION} already exists."
     echo "Jail ${BUILDJAIL} is very likely already up to date."
     # TODO: Test if the snapshot has dependent clones. Stop here if it does.
 fi
 
+
+# TODO: Check that BUILDJAIL is running before trying to launch anything in it.
+
 # Run the 'make installworld', 'mergemaster', 'make delete-old delete-old-libs'
 # sequence in the build jail.
-# TODO: create an in_jail() function for running stuff in a jail.
 
 # make installworld
 rdnzl_in_jail "${BUILDJAIL}" \
@@ -94,6 +118,9 @@ rdnzl_in_jail "${BUILDJAIL}" \
     { echo "Can't run 'make installworld' in jail ${BUILDJAIL}}"; exit 1; }
 
 # mergemaster(8)
+# TODO: investigate if 'make distrib-dirs distribution' could be used
+# instead. The jail is unlikely to have anything worth keeping in
+# settings.
 rdnzl_in_jail "${BUILDJAIL}" \
     /usr/sbin/mergemaster -Ui --run-updates=always || \
     { echo "Can't run mergemaster(8) in jail ${BUILDJAIL}}"; exit 1; }
@@ -105,15 +132,14 @@ rdnzl_in_jail "${BUILDJAIL}" \
 
 
 
-# Record the installed version and branch in the ZFS user properties.
+# Record the installed revision in a ZFS user property.
 # Snapshot the build jail dataset @SVNREVISION
-"${ZFS_CMD}" set "${USERPROPBASE}:svnrevision=${SVNREVISION}" \
+"${ZFS_CMD}" set "${SVNREVISIONPROP}=${OBJ_SVNREVISION}" \
     "${BUILDJAIL_FS}"
 
-"${ZFS_CMD}" set "${USERPROPBASE}:branch=${BRANCHOFSOURCES}" \
-    "${BUILDJAIL_FS}"
-
-"${ZFS_CMD}" snapshot "${BUILDJAIL_FS}@${SVNREVISION}"
+# TODO: Check if the snapshot exists already, delete first when needed
+# TODO: The snapshot is not used anymore for anything, maybe drop it.
+"${ZFS_CMD}" snapshot "${BUILDJAIL_FS}@${OBJ_SVNREVISION}"
 
 # Restart the jail.
 /usr/sbin/service jail restart "${BUILDJAIL}"
