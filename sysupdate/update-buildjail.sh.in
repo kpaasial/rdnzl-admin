@@ -10,7 +10,7 @@
 
 usage()
 {
-    echo "Usage: $0 [-h][-B buildjail]" 
+    echo "Usage: $0 buildjail" 
     exit 0   
 }
 
@@ -23,29 +23,17 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 . "${PREFIX}/etc/rdnzl-admin/sysupdate-setup.rc"
 
 
-# Defaults for settings
-
-: ${BUILDJAIL:="buildstable10amd64"}
-
-
-# Parse command line arguments to override the defaults.
-
-while getopts "B:h" o
-do
-    case "$o" in
-    B)  BUILDJAIL="$OPTARG";;
-    h)  usage;;
-    *)  usage;;
-    esac
-
-done
-
-shift $((OPTIND-1))
-
 
 # SVNBRANCH is a fixed property and can not be changed.
 # Only SVNREVISION gets updated
  
+: ${BUILDJAIL:="$1"}
+
+# Buildjail is a required argument, there is no reasonable default.
+if test -z "${BUILDJAIL}"; then
+    usage
+fi
+
 
 # Build jail filesystems
 BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
@@ -86,7 +74,7 @@ OBJ_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "${SVNREVISI
 
 if test "${OBJ_SVNREVISION}" -lt "${SRC_SVNREVISION}"; then
     echo "OBJ_SVNREVISION is lesser than SRC_SVNREVISION."
-    echo "Has buildworld and buildkernel been run in buildjail yet?"
+    echo "Have buildworld and buildkernel been run in buildjail yet?"
     exit 1
 fi
 
