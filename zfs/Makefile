@@ -1,7 +1,7 @@
 PREFIX=/opt
 
 
-INCLUDES= rdnzl-zfs-functions.sh
+INCLUDES= zfs-functions.sh
 
 install:	${INCLUDES}
 	${INSTALL} -d -o root -g wheel ${DESTDIR}${PREFIX}/share/rdnzl
