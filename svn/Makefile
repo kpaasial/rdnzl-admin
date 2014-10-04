@@ -1,7 +1,7 @@
 PREFIX=/opt
 
 
-INCLUDES= rdnzl-svn-functions.sh
+INCLUDES= svn-functions.sh
 
 install:	${INCLUDES}
 	${INSTALL} -d -o root -g wheel ${DESTDIR}${PREFIX}/share/rdnzl
