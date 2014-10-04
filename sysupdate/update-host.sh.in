@@ -47,24 +47,21 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 
 usage()
 {
-    echo "Usage: $0 [-h] [-B buildjail] " 
+    echo "Usage: $0 [-W] buildjail " 
     exit 0
 }
 
-# Defaults for settings
-# TODO: This could be autodetected at least from kern.osreldate
-# and uname -m/uname -p. Other options include looking at
-# SVNBRANCH of the root filesystem if set.
-: ${BUILDJAIL:="buildstable10amd64"}
-
+# Defaults for settings.
+INSTALL_MODE="kernel"
 
 # Parse command line arguments to override the defaults.
-
-while getopts "B:h" o
+# TODO: Add a -n flag for testrun option to see what would
+# be done.
+while getopts "hW" o
 do
     case "$o" in
-    B)  BUILDJAIL="$OPTARG";;
     h)  usage;;
+    W)  INSTALL_MODE="world";;
     *)  usage;;
     esac
 
@@ -72,16 +69,30 @@ done
 
 shift $((OPTIND-1))
 
+: ${BUILDJAIL:="$1"}
+
+# Buildjail is a required argument, there is no reasonable default.
+if test -z "${BUILDJAIL}"; then
+    usage
+fi
+
+
 # Read the SVN revision from the buildjail
 
-#BUILDJAILSRC_FS="${JAIL_BASEFS}/${BUILDJAIL}/src"
-BUILDJAILOBJ_FS="${JAIL_BASEFS}/${BUILDJAIL}/obj"
+BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
+BUILDJAILSRC_FS="${BUILDJAIL_FS}/src"
+BUILDJAILOBJ_FS="${BUILDJAIL_FS}/obj"
 
 
-#if ! rdnzl_zfs_filesystem_exists "${BUILDJAILSRC_FS}"; then
-#    echo "No such buildjail src filesystem ${BUILDJAILSRC_FS}"
-#    exit 1
-#fi
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAIL_FS}"; then
+    echo "No such buildjail filesystem ${BUILDJAIL_FS}"
+    exit 1
+fi
+
+if ! rdnzl_zfs_filesystem_exists "${BUILDJAILSRC_FS}"; then
+    echo "No such buildjail src filesystem ${BUILDJAILSRC_FS}"
+    exit 1
+fi
 
 if ! rdnzl_zfs_filesystem_exists "${BUILDJAILOBJ_FS}"; then
     echo "No such buildjail obj filesystem ${BUILDJAILOBJ_FS}"
@@ -90,18 +101,30 @@ fi
 
 
 
-#SRC_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAILSRC_FS}" "${SVNREVISIONPROP}") || \
-#    { echo "Can not read SVNREVISION from filesystem ${BUILDJAILSRC_FS}"; exit 1;}
+SRC_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAILSRC_FS}" "${SVNREVISIONPROP}") || \
+    { echo "Can not read SVNREVISION from filesystem ${BUILDJAILSRC_FS}"; exit 1;}
 
-#SRC_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAILSRC_FS}" "${SVNBRANCHPROP}") || \
-#    { echo "Can not read SVNBRANCH from filesystem ${BUILDJAILSRC_FS}"; exit 1;}
+SRC_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAILSRC_FS}" "${SVNBRANCHPROP}") || \
+    { echo "Can not read SVNBRANCH from filesystem ${BUILDJAILSRC_FS}"; exit 1;}
 
+BUILDJAILSRC_MNT=$(rdnzl_zfs_get_property_value "${BUILDJAILSRC_FS}" "mountpoint")
 
 OBJ_SVNREVISION=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "${SVNREVISIONPROP}") || \
     { echo "Can not read SVNREVISION from filesystem ${BUILDJAILOBJ_FS}"; exit 1;}
 
 OBJ_SVNBRANCH=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "${SVNBRANCHPROP}") || \
     { echo "Can not read SVNBRANCH from filesystem ${BUILDJAILOBJ_FS}"; exit 1;}
+
+BUILDJAILOBJ_MNT=$(rdnzl_zfs_get_property_value "${BUILDJAILOBJ_FS}" "mountpoint")
+
+# Require that the SVN revisions of sources and objects match
+
+if test "${OBJ_SVNREVISION}" -lt "${SRC_SVNREVISION}"; then
+    echo "OBJ_SVNREVISION is lesser than SRC_SVNREVISION."
+    echo "Have buildworld and buildkernel been run in the buildjail yet?"
+    exit 1
+fi
+
 
 
 ROOT_DATASET=$(rdnzl_zfs_filesystem_from_path "/")
@@ -124,26 +147,21 @@ echo "WORLD_SVNBRANCH: ${WORLD_SVNBRANCH}"
 echo "OBJ_SVNREVISION: ${OBJ_SVNREVISION}"
 echo "OBJ_SVNBRANCH: ${OBJ_SVNBRANCH}"
 
-# Compare the SVN revisions of the buildjail /usr/obj and installed kernel.
-# If the installed kernel revision is less than the revision of the
-# buildjail /usr/obj perform 'make installkernel', record the new revision in
-# ZFS user properties and exit. Instruct the user to shutdown and reboot
-# to single user mode to continue the host update with the update of 
-# world.
 
-if test "${KERNEL_SVNREVISION}" -lt "${OBJ_SVNREVISION}"; then
+# Note: Installing sources/objects with the same SVNBRANCH/SVNREVISION is
+# ok because sometimes it's necessary to redo a build using the same version.
+
+# Mount /usr/src and /usr/obj if needed
+if ! /sbin/mount | grep -q 'on /usr/src'; then
+    /sbin/mount_nullfs "${BUILDJAILSRC_MNT}" /usr/src
+fi   
+
+if ! /sbin/mount | grep -q 'on /usr/obj'; then
+    /sbin/mount_nullfs "${BUILDJAILOBJ_MNT}" /usr/obj
+fi   
+
+if test "${INSTALL_MODE}" = "kernel"; then 
     echo "Going to perform 'make installkernel' in /usr/src to install the new kernel."
-
-    # Mount /usr/src and /usr/obj if needed
-    # TODO: Don't rely on /etc/fstab, use paths to the buildjail filesystems
-    # and mount_nullfs directly
-    if ! /sbin/mount | grep -q 'on /usr/src'; then
-        /sbin/mount /usr/src
-    fi   
-
-    if ! /sbin/mount | grep -q 'on /usr/obj'; then
-        /sbin/mount /usr/obj
-    fi   
 
     # TODO: Find a way to revert /boot/kernel* to initial state
     # if 'make installkernel' fails midway.
@@ -162,29 +180,25 @@ if test "${KERNEL_SVNREVISION}" -lt "${OBJ_SVNREVISION}"; then
     echo "Installed kernel from build that was done with sources of"
     echo "branch ${OBJ_SVNBRANCH} and SVN revision ${OBJ_SVNREVISION}."
     echo "Restart to single user mode to continue update."
+    
+else 
 
-    exit 0
-fi 
+    # Run the installworld sequence
+    /usr/sbin/mergemaster -p
 
+    /usr/bin/make -C /usr/src installworld
 
-# If the version of the installed kernel matches the objects we are
-# probably in single user mode being run after /upgrade.sh.
-# (This won't be run before /upgrade.sh because this script may not
-# be available until /upgrade.sh has mounted all filesystems).
-# Record the svnrevision of the objects used as the version of the installed
-# world on the root filesystem.
-# TODO: Find a way to verify that the world was in fact updated to 
-# SVNVERSION of the sources before this script is run.
+    /usr/sbin/mergemaster
 
-# TODO: Incorporate upgrade2.sh in this script so that it won't be needed
-# on ZFS on root systems. This would mean /upgrade.sh would call
-# update-host.sh to install world and do the other steps of the update.
+    /usr/bin/make -C /usr/src -D BATCH_DELETE_OLD_FILES delete-old delete-old-libs
 
-# Record the revision of the newly installed world to ZFS user property.
-"${ZFS_CMD}" set "${SVNREVISIONPROP}=${OBJ_SVNREVISION}" "${ROOT_DATASET}"
-# And branch
-"${ZFS_CMD}" set "${SVNBRANCHPROP}=${OBJ_SVNBRANCH}" "${ROOT_DATASET}"
+    # Record the revision of the newly installed world to ZFS user property.
+    "${ZFS_CMD}" set "${SVNREVISIONPROP}=${OBJ_SVNREVISION}" "${ROOT_DATASET}"
+    # And branch
+    "${ZFS_CMD}" set "${SVNBRANCHPROP}=${OBJ_SVNBRANCH}" "${ROOT_DATASET}"
 
-echo "Recorded installed world as branch ${OBJ_SVNBRANCH} and SVN revision ${OBJ_SVNREVISION}"
+    echo "Installed world from build that was done with branch ${OBJ_SVNBRANCH} and SVN revision ${OBJ_SVNREVISION}"
+
+fi
 
 exit 0
