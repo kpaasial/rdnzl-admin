@@ -1,7 +1,7 @@
 PREFIX=/opt
 
 
-INCLUDES= rdnzl-jail-functions.sh
+INCLUDES= jail-functions.sh
 
 install:	${INCLUDES}
 	${INSTALL} -d -o root -g wheel ${DESTDIR}${PREFIX}/share/rdnzl
