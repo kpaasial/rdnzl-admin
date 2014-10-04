@@ -16,7 +16,6 @@
 # the update-host.sh script the build jail should be updated by
 # running the update-buildjail.sh script.
 
-# TODO: Write a script to automate the buildworld/buildkernel procedure.
 
 # TODO: Add a way to bootstrap a buildjail (any possible branch/version
 # based on the build host version) using a release distribution or a
@@ -33,28 +32,17 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 
 usage()
 {
-    echo "$0 [-hf] [-B buildjail]" 
-    exit 0
+    echo "Usage: $0 buildjail" 
+    exit 1
 }
 
-# Defaults for settings
 
-: ${BUILDJAIL:="buildstable10amd64"}
+: ${BUILDJAIL:="$1"}
 
-
-# Parse command line arguments to override the defaults.
-
-while getopts "B:h" o
-do
-    case "$o" in
-    B)  BUILDJAIL="$OPTARG";;
-    h)  usage;;
-    *)  usage;;
-    esac
-done
-
-shift $((OPTIND-1))
-
+# Buildjail is a required argument, there is no reasonable default.
+if test -z "${BUILDJAIL}"; then
+    usage
+fi
 
 # Build jail filesystem
 BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
