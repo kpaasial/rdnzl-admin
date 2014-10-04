@@ -18,28 +18,16 @@ SHARE_RDNZL="${PREFIX}/share/rdnzl"
 
 usage()
 {
-    echo "$0 [-B buildjail]" 
+    echo "Usage: $0 buildjail" 
     exit 0
 }
 
-# Defaults for settings
+: ${BUILDJAIL:="$1"}
 
-: ${BUILDJAIL:="buildstable10amd64"}
-
-
-# Parse command line arguments to override the defaults.
-
-while getopts "B:h" o
-do
-    case "$o" in
-    B)  BUILDJAIL="$OPTARG";;
-    h)  usage;;
-    *)  usage;;
-    esac
-done
-
-shift $((OPTIND-1))
-
+# Buildjail is a required argument, there is no reasonable default.
+if test -z "${BUILDJAIL}"; then
+    usage
+fi
 
 # Build jail filesystem
 BUILDJAIL_FS="${JAIL_BASEFS}/${BUILDJAIL}"
@@ -106,6 +94,6 @@ if test "${SRC_SVNREVISION}" -gt "${OBJ_SVNREVISION}"; then
     { echo "'make buildworld buildkernel' failed."; exit 1;}
 
     # Record the new SVNREVISION (of the sources used) to the buildjail /usr/obj filesystem
-    "${ZFS_CMS}" set "${SVNREVISIONPROP}=${SRC_SVNREVISION}" \
+    "${ZFS_CMD}" set "${SVNREVISIONPROP}=${SRC_SVNREVISION}" \
         "${BUILDJAILOBJ_FS}"
 fi
