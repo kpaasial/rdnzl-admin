@@ -1,3 +1,8 @@
+# TODO: Do proper parameter validation and return appropriate
+# status codes. For example, empty strings should not be valid
+# parameters.
+# TODO: Discard standard error on all commands
+
 ZFS_CMD=/sbin/zfs
 
 
