@@ -13,7 +13,10 @@ nooptions   COMPAT_LINUX
 
 option DDB
 
+# Disable cd rom driver and floppy driver
 nodevice    fdc
+nodevice    cd
+nodevice    ch
 
 nodevice    mvs
 nodevice    siis
@@ -73,6 +76,7 @@ nodevice    hpt27xx
 nodevice    pst
 nodevice    urio
 
+nodevice    mrsas
 
 nodevice  mmc
 nodevice  mmcsd
@@ -225,9 +229,9 @@ nodevice    xenpci
 nooptions   XENHVM
 nodevice    vmx
 
-device      pf
-device      pflog
-device      pfsync
+#device      pf
+#device      pflog
+#device      pfsync
 
 
 options     ALTQ
@@ -237,3 +241,14 @@ options     ALTQ_RIO
 options     ALTQ_HFSC
 options     ALTQ_PRIQ
 options     ALTQ_NOPCC
+
+
+#options     IPFIREWALL
+#options     IPFIREWALL_VERBOSE
+#options     IPFIREWALL_VERBOSE_LIMIT=5
+
+#options     IPV6FIREWALL
+#options     IPV6FIREWALL_VERBOSE
+#options     IPV6FIREWALL_VERBOSE_LIMIT=5
+
+#options     IPDIVERT
