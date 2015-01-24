@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CONFIG=/usr/local/etc/pf-tables.txt
+CONFIG=/opt/etc/pf-tables.txt
 DBDIR=/var/db/pf-tables
 
 
