@@ -2,16 +2,16 @@
 
 
 
-PREFIX=/usr/local
+PREFIX=/opt
 
 SCRIPTS= firewall-log.sh update-pf-tables.sh
-ETCFILES= pf-tables.txt
+ETCFILES= pf-tables.txt pf.conf
 BASEETCFILES= pf.conf
 
 all:
 
 
-install: install-scripts install-etc install-base-etc
+install: install-scripts install-etc
 
 install-scripts:	$(SCRIPTS)
 	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/sbin 
@@ -19,6 +19,6 @@ install-scripts:	$(SCRIPTS)
 install-etc:	${ETCFILES}
 	${INSTALL} -o root -g wheel -m 640 $> ${PREFIX}/etc
 
-install-base-etc:	${BASEETCFILES}
-	${INSTALL} -o root -g wheel -m 640 $> /etc
+#install-base-etc:	${BASEETCFILES}
+#	${INSTALL} -o root -g wheel -m 640 $> /etc
 
