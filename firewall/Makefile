@@ -17,3 +17,10 @@ install-scripts:	$(SCRIPTS)
 
 install-etc:	${ETCFILES}
 	${INSTALL} -o root -g wheel -m 640 $> ${PREFIX}/etc
+
+
+reload:
+	/usr/sbin/service pf reload
+
+restart:
+	/usr/sbin/service pf restart
