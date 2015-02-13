@@ -4,8 +4,14 @@
 
 PREFIX=/opt
 
+PFCTL=/sbin/pfctl
+
+SERVICE=/usr/sbin/service
+
+PF_CONF= pf.conf
+
 SCRIPTS= firewall-log.sh update-pf-tables.sh
-ETCFILES= pf-tables.txt pf.conf
+ETCFILES= pf-tables.txt ${PF_CONF}
 
 all:
 
@@ -18,9 +24,11 @@ install-scripts:	$(SCRIPTS)
 install-etc:	${ETCFILES}
 	${INSTALL} -o root -g wheel -m 640 $> ${PREFIX}/etc
 
+check:
+	${PFCTL} -n -f ${PF_CONF}
 
 reload:
-	/usr/sbin/service pf reload
+	${SERVICE} pf reload
 
 restart:
-	/usr/sbin/service pf restart
+	${SERVICE} pf restart
