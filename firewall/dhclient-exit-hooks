@@ -1,0 +1,50 @@
+#!/bin/sh
+
+
+if [ -x /usr/bin/logger ]; then
+    LOGGER="/usr/bin/logger -s -p user.notice -t dhclient"
+else
+    LOGGER=echo
+fi
+
+
+setup_wan_alias()
+{
+    $LOGGER "setup_wan_alias called"
+
+    # If PF is not enabled do nothing
+    
+    IFCONFIG_VR0=$(/sbin/ifconfig vr0)
+
+    $LOGGER "$IFCONFIG_VR0"
+
+    if /sbin/pfctl -si | /usr/bin/head -1 | /usr/bin/grep "Enabled"; then
+        $LOGGER "PF is enabled."
+        
+    fi
+
+
+}
+
+
+if [ -z "$reason" ]; then
+    $LOGGER "No DHCP reason"
+    exit 0
+else
+    $LOGGER "DHCP reason: $reason"
+fi
+
+case $reason in
+
+BOUND|RENEW|REBIND|REBOOT)
+    setup_wan_alias
+    ;;
+
+EXPIRE|FAIL)
+    ;;
+
+TIMEOUT)
+    ;;
+esac
+
+exit 0
