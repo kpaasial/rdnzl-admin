@@ -4,7 +4,7 @@ CONFIG=/opt/etc/pf-tables.txt
 DBDIR=/var/db/pf-tables
 
 
-while read URL TABLEFILE
+while read URL TABLEFILE TABLE
 do
     if [ -n "${URL}" ]; then
         echo "URL: ${URL}"
@@ -24,4 +24,5 @@ do
     fi
 done < ${CONFIG}
 
-/usr/sbin/service pf reload
+load-pf-tables.sh
+
