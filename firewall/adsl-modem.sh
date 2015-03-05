@@ -1,7 +1,7 @@
 #!/bin/sh --
 
 ANCHOR="adsl-modem"
-WAN=vr0
+WAN=re0
 IP_ADSL_MODEM="192.168.1.1"
 IP_WAN_ALIAS="192.168.1.200"
 

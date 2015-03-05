@@ -10,7 +10,7 @@ SERVICE=/usr/sbin/service
 
 PF_CONF= pf.conf
 
-SCRIPTS= firewall-log.sh load-pf-tables.sh update-pf-tables.sh
+SCRIPTS= firewall-log.sh load-pf-tables.sh update-pf-tables.sh adsl-modem.sh
 ETCFILES= pf-tables.txt ${PF_CONF}
 BASEETCFILES= dhclient-exit-hooks
 
