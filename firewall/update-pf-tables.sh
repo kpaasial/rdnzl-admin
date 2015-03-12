@@ -24,5 +24,5 @@ do
     fi
 done < ${CONFIG}
 
-load-pf-tables.sh
+/opt/sbin/load-pf-tables.sh
 
