@@ -1,5 +1,7 @@
 #!/bin/sh --
 
+# Script for loading a set of IP/CIDR tables into pf(4)
+
 CONFIG=/opt/etc/pf-tables.txt
 DBDIR=/var/db/pf-tables
 
