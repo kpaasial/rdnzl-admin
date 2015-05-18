@@ -1,5 +1,8 @@
 #!/bin/sh --
 
+# Script for updating a set of IP/CIDR tables.i
+# This script does only the updating.
+
 CONFIG=/opt/etc/pf-tables.txt
 DBDIR=/var/db/pf-tables
 
@@ -34,6 +37,9 @@ trap finish EXIT
 
 echo "SCRATCH: ${SCRATCH}"
 
+
+# Make two passes over the config file.
+# First pass downloads the files and processes the input to strip comments.
 while read URL TABLEFILE TABLE
 do
     if [ -n "${URL}" ] && [ -n "${TABLEFILE}" ] && [ -n "${TABLE}" ]; then
@@ -44,19 +50,41 @@ do
         echo "TMPFILE: ${TMPFILE}"
         /usr/bin/fetch -a -T30 -o "${TMPFILE}" "${URL}" || exit 1
 
-        # Make a backup of the existing tablefile. This script will not restore
-        # the back up in case of errors though.
-        if [ -r "${DBDIR}/${TABLEFILE}" ]; then
-            cp "${DBDIR}/${TABLEFILE}" "${DBDIR}/${TABLEFILE}.bak" || exit 1
-        fi
-        # Process the downloaded file if it exists and put the final version
-        # under DBDIR. The sed(1) magic tries to strip all # and ; comments
-        # and then remove empty lines.
+        # Process the downloaded file in-place. The sed(1) magic tries to 
+        # strip all # and ; comments and then remove empty lines.
         if [ -r "${TMPFILE}" ]; then
-            sed -e 's/[;#].*$//g' -e '/^\s*$/d' "${TMPFILE}"  >"${DBDIR}/${TABLEFILE}"
+            sed -e 's/[;#].*$//g' -e '/^\s*$/d' -i .bak "${TMPFILE}"
+        else
+            echo "ERROR: Temporary file ${TMPFILE} does not exist."
+            exit 1
         fi
     fi
 done < ${CONFIG}
 
-/opt/sbin/load-pf-tables.sh
+
+# The second pass copies the temporary tables files to DBDIR.
+# This is to avoid a situation where there is an error with one or more of the
+# downloaded tables and the resulting tables are not consistent.
+
+while read URL TABLEFILE TABLE
+do
+    if [ -n "${URL}" ] && [ -n "${TABLEFILE}" ] && [ -n "${TABLE}" ]; then
+        echo "TABLEFILE: ${TABLEFILE}"
+
+        TMPFILE="${SCRATCH}/${TABLEFILE}"
+        echo "TMPFILE: ${TMPFILE}"
+
+        if [ ! -r "${TMPFILE}" ]; then
+            echo "ERROR: Temporary file ${TMPFILE} not readable."
+            exit 1
+        fi
+        # Make a backup of the existing tablefile. This script will not restore
+        # the backup in case of errors though.
+        if [ -r "${DBDIR}/${TABLEFILE}" ]; then
+            cp -f "${DBDIR}/${TABLEFILE}" "${DBDIR}/${TABLEFILE}.bak" || exit 1
+        fi
+        
+        cp -f "${TMPFILE}" "${DBDIR}/${TABLEFILE}"
+    fi
+done < ${CONFIG}
 
