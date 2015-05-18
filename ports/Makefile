@@ -8,7 +8,7 @@
 
 PREFIX=/opt
 
-SCRIPTS= build-packages.sh ports-playground.sh  update-ports.sh
+SCRIPTS= build-packages.sh ports-dependencies.sh  update-ports.sh
 
 ETCFILES= ports-firewall.txt
 
