@@ -16,7 +16,7 @@ setup_wan_alias()
     
     if /sbin/pfctl -si | /usr/bin/head -1 | /usr/bin/grep "Enabled"; then
         $LOGGER "PF is enabled."
-        
+        /opt/sbin/adsl-modem.sh        
     fi
 
 
