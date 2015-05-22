@@ -33,5 +33,6 @@ sysutils/pftop
 sysutils/smartmontools
 sysutils/tmux
 sysutils/vimpager
+sysutils/zfs-stats
 www/elinks
 www/nginx
