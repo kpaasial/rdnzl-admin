@@ -25,9 +25,11 @@ security/pam_ssh_agent_auth
 security/sudo
 shells/zsh
 sysutils/ataidle
+sysutils/cpdup
 sysutils/dmidecode
 sysutils/flashrom
 sysutils/flock
+sysutils/intel-pcm
 sysutils/lsof
 sysutils/pftop
 sysutils/smartmontools
