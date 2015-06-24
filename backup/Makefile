@@ -2,7 +2,7 @@
 
 
 
-PREFIX=/usr/local
+PREFIX=/opt
 
 SCRIPTS= system-dump.sh
 
