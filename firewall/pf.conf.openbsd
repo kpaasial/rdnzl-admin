@@ -1,0 +1,127 @@
+#	$OpenBSD: pf.conf,v 1.54 2014/08/23 05:49:42 deraadt Exp $
+#
+# See pf.conf(5) and /etc/examples/pf.conf
+
+
+# Macros
+
+int_if="rl0"
+
+trans_port = "9040"
+
+tcp_services="{ 50022 }"
+icmp_types="{ unreach echoreq }"
+
+icmp6_types="{ unreach toobig timex paramprob echoreq routeradv routersol neighbradv neighbrsol }"
+
+PORT_SSH_EXTERNAL = 50022
+
+PORT_XMISSION = 51413
+
+IP_SIXXS_POP_DNA = 62.78.96.38
+
+# Tables
+
+# Bogons
+
+# IPv4 fullbogons
+table <ip_fullbogons_ipv4> persist
+IP_FULLBOGONS_IPV4 = "<ip_fullbogons_ipv4>"
+
+# IPv6 fullbogons
+table <ip_fullbogons_ipv6> persist
+IP_FULLBOGONS_IPV6 = "<ip_fullbogons_ipv6>"
+
+# Spamhaus DROP and EDROP lists
+table <ip_drop> persist
+IP_DROP = "<ip_drop>"
+
+table <ip_edrop> persist
+IP_EDROP = "<ip_edrop>"
+
+
+set block-policy return
+set loginterface egress
+
+set skip on lo
+
+# scrub incoming packets
+match in all scrub (no-df random-id)
+
+# match rules
+
+match out on rl1 inet from any to 192.168.1.0/24 nat-to 192.168.1.200
+
+match out on rl1 inet from any to 192.168.2.0/24 nat-to 192.168.2.200
+
+
+match out on egress inet from !(egress:network) to any nat-to (egress:0)
+
+
+#match in on egress inet proto { tcp udp } from any to (egress:0) port $PORT_XMISSION rdr-to 10.71.14.8
+
+# filter rules
+
+
+# Default deny rule(s)
+block all label "DEFAULT_DENY"
+block inet6 all label "DEFAULT_DENY_IPV6"
+
+
+# Rules for dropping unwanted traffic
+# -----------------------------------------------------------------------------
+antispoof quick for { lo $int_if }
+
+# Block anything with source/destination port number 0, TCP/UDP.
+# Taken from pfSense.
+block drop in log quick on egress proto { tcp, udp } \
+    from any port = 0 to any label "BLOCK_$if_PORT_ZERO_SRC"
+block drop in log quick on egress proto { tcp, udp } \
+    from any to any port = 0 label "BLOCK_$if_PORT_ZERO_DST"
+
+
+# Silence log noise on WAN from igmp(4) traffic
+block quick on { egress rl1 } inet from any to 224.0.0.0/4
+
+# End of rules for dropping unwanted traffic
+
+
+# Pass rules
+
+# Pass rules for traffic leaving out via interfaces
+# -----------------------------------------------------------------------------
+
+# Allow all outbound traffic on all interfaces. Keep log of important traffic.
+
+# DHCP out to ISP
+pass out log quick on egress inet proto udp \
+    from any port bootpc to any port bootps label "PASS_$if_DHCP_OUT"
+
+# DHCP out on lan interface
+pass out log quick on $int_if inet proto udp \
+    from any port = bootps to any port bootpc label "PASS_$if_DHCP_OUT"
+
+pass out quick
+
+# Pass rules for traffic coming in on an interface
+
+# For testing tor
+#pass in quick on $int_if inet proto tcp from any to ! $int_if port { http https } divert-to 127.0.0.1 port $trans_port
+
+#pass in quick on $int_if inet proto { tcp udp } from any to any port domain rdr-to 127.0.0.1 port 54
+
+pass in quick on $int_if
+
+pass in quick on egress inet proto ipv6 from $IP_SIXXS_POP_DNA to (egress)
+
+pass in on egress inet proto tcp from any to (egress:0) port $PORT_SSH_EXTERNAL \
+    rdr-to localhost port ssh
+
+pass in on egress inet proto { tcp udp } from any to (egress:0) port $PORT_XMISSION \
+    rdr-to 10.71.14.8
+
+
+pass in inet proto icmp all icmp-type $icmp_types
+
+pass in inet6 proto icmp6 all icmp6-type $icmp6_types
+
