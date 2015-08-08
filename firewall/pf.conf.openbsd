@@ -70,7 +70,60 @@ block inet6 all label "DEFAULT_DENY_IPV6"
 
 # Rules for dropping unwanted traffic
 # -----------------------------------------------------------------------------
+
+# Silence log noise on WAN from igmp(4) traffic
+block quick on egress inet from any to 224.0.0.0/4
+
+# Allow all icmp6(4) to ff02::/16
+pass quick inet6 proto icmp6 from any to ff02::/16 label "PASS_FF02_16_DST"
+
+# Same for fe80::/10 to fe80::/10 and fe80::/10 to ff02::/16
+pass quick inet6 proto icmp6 from fe80::/10 to fe80::/10 label "PASS_FE80_10_SRC_FE80_10_DST"
+pass quick inet6 proto icmp6 from fe80::/10 to ff02::/16 label "PASS_FE80_10_SRC_FF02_16_DST"
+
 antispoof quick for { lo $int_if }
+
+# Block traffic from/to IPv4 bogons.
+block drop in log quick on egress inet from $IP_FULLBOGONS_IPV4 to any \
+    label "BLOCK_IPV4_FULLBOGONS_SRC"
+block return out log quick on egress inet from any to $IP_FULLBOGONS_IPV4 \
+    label "BLOCK_IPV4_FULLBOGONS_DST"
+
+# Block traffic from/to IPv6 bogons.
+block drop in log quick on egress inet6 from $IP_FULLBOGONS_IPV6 to any \
+    label "BLOCK_IPV6_FULLBOGONS_SRC"
+block return out quick log on egress inet6 from any to $IP_FULLBOGONS_IPV6 \
+    label "BLOCK_IPV6_FULLBOGONS_DST"
+
+
+# SixXS recommends blocking this prefix.
+block drop in log quick on egress inet6 from fd00::/48 to any \
+    label "BLOCK_$if_FD00_48_SRC"
+block drop in log quick on egress inet6 from any to fd00::/48 \
+    label "BLOCK_$if_FD00_48_DST"
+
+
+# Block anything on Spamhaus E/DROP list, in or out.
+# These are IPv4 only.
+
+# Any connection coming in on LAN to DROP IPs
+# Return so the connections fail immediately and are not stuck waiting.
+block return in log quick on $int_if inet from any to $IP_DROP \
+    label "BLOCK_$if_DROP_DST"
+block return in log quick on $int_if inet from any to $IP_EDROP \
+    label "BLOCK_$if_EDROP_DST"
+
+# Any connection from DROP IP addresses to any address, always drop.
+block drop in log quick on egress inet from $IP_DROP to any \
+    label "BLOCK_$if_DROP_SRC"
+block drop in log quick on egress inet from $IP_EDROP to any \
+    label "BLOCK_$if_EDROP_SRC"
+
+# Any connections made to DROP IP addresses from the firewall itself.
+block return out log quick on egress inet from any to $IP_DROP \
+    label "BLOCK_$if_DROP_DST"
+block return out log quick on egress inet from any to $IP_EDROP \
+    label "BLOCK_$if_EDROP_DST"
 
 # Block anything with source/destination port number 0, TCP/UDP.
 # Taken from pfSense.
@@ -79,9 +132,6 @@ block drop in log quick on egress proto { tcp, udp } \
 block drop in log quick on egress proto { tcp, udp } \
     from any to any port = 0 label "BLOCK_$if_PORT_ZERO_DST"
 
-
-# Silence log noise on WAN from igmp(4) traffic
-block quick on { egress rl1 } inet from any to 224.0.0.0/4
 
 # End of rules for dropping unwanted traffic
 
