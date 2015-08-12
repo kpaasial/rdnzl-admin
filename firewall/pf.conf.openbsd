@@ -1,18 +1,11 @@
-#	$OpenBSD: pf.conf,v 1.54 2014/08/23 05:49:42 deraadt Exp $
-#
-# See pf.conf(5) and /etc/examples/pf.conf
-
 
 # Macros
 
-int_if="rl0"
+INT_IF="rl0"
 
-trans_port = "9040"
+ICMP_TYPES="{ unreach echoreq }"
 
-tcp_services="{ 50022 }"
-icmp_types="{ unreach echoreq }"
-
-icmp6_types="{ unreach toobig timex paramprob echoreq routeradv routersol neighbradv neighbrsol }"
+ICMP6_TYPES="{ unreach toobig timex paramprob echoreq routeradv routersol neighbradv neighbrsol }"
 
 PORT_SSH_EXTERNAL = 50022
 
@@ -42,6 +35,7 @@ IP_EDROP = "<ip_edrop>"
 
 set block-policy return
 set loginterface egress
+set optimization conservative
 
 set skip on lo
 
@@ -71,8 +65,10 @@ block inet6 all label "DEFAULT_DENY_IPV6"
 # Rules for dropping unwanted traffic
 # -----------------------------------------------------------------------------
 
-# Silence log noise on WAN from igmp(4) traffic
+# Silence log noise on egress from igmp(4) traffic.
 block quick on egress inet from any to 224.0.0.0/4
+
+# Exceptions to block rules that follow
 
 # Allow all icmp6(4) to ff02::/16
 pass quick inet6 proto icmp6 from any to ff02::/16 label "PASS_FF02_16_DST"
@@ -81,15 +77,15 @@ pass quick inet6 proto icmp6 from any to ff02::/16 label "PASS_FF02_16_DST"
 pass quick inet6 proto icmp6 from fe80::/10 to fe80::/10 label "PASS_FE80_10_SRC_FE80_10_DST"
 pass quick inet6 proto icmp6 from fe80::/10 to ff02::/16 label "PASS_FE80_10_SRC_FF02_16_DST"
 
-antispoof quick for { lo $int_if }
+antispoof quick for { egress $INT_IF }
 
-# Block traffic from/to IPv4 bogons.
+# Block traffic from/to IPv4 bogons on egress.
 block drop in log quick on egress inet from $IP_FULLBOGONS_IPV4 to any \
     label "BLOCK_IPV4_FULLBOGONS_SRC"
 block return out log quick on egress inet from any to $IP_FULLBOGONS_IPV4 \
     label "BLOCK_IPV4_FULLBOGONS_DST"
 
-# Block traffic from/to IPv6 bogons.
+# Block traffic from/to IPv6 bogons on egress.
 block drop in log quick on egress inet6 from $IP_FULLBOGONS_IPV6 to any \
     label "BLOCK_IPV6_FULLBOGONS_SRC"
 block return out quick log on egress inet6 from any to $IP_FULLBOGONS_IPV6 \
@@ -106,14 +102,14 @@ block drop in log quick on egress inet6 from any to fd00::/48 \
 # Block anything on Spamhaus E/DROP list, in or out.
 # These are IPv4 only.
 
-# Any connection coming in on LAN to DROP IPs
+# Any connection coming in on INT_IF to DROP IPs
 # Return so the connections fail immediately and are not stuck waiting.
-block return in log quick on $int_if inet from any to $IP_DROP \
+block return in log quick on $INT_IF inet from any to $IP_DROP \
     label "BLOCK_$if_DROP_DST"
-block return in log quick on $int_if inet from any to $IP_EDROP \
+block return in log quick on $INT_IF inet from any to $IP_EDROP \
     label "BLOCK_$if_EDROP_DST"
 
-# Any connection from DROP IP addresses to any address, always drop.
+# Any connection from DROP IP addresses to any address on egress, always drop.
 block drop in log quick on egress inet from $IP_DROP to any \
     label "BLOCK_$if_DROP_SRC"
 block drop in log quick on egress inet from $IP_EDROP to any \
@@ -148,30 +144,67 @@ pass out log quick on egress inet proto udp \
     from any port bootpc to any port bootps label "PASS_$if_DHCP_OUT"
 
 # DHCP out on lan interface
-pass out log quick on $int_if inet proto udp \
+pass out log quick on $INT_IF inet proto udp \
     from any port = bootps to any port bootpc label "PASS_$if_DHCP_OUT"
+
+# Encapsulated IPv6 to the SixXS POP
+pass out log quick on egress proto ipv6 from (egress:0) to $IP_SIXXS_POP_DNA \
+    label "PASS_$if_$proto_OUT"
+
+# SSH
+pass out log quick on egress inet proto tcp from (egress:0) to any port ssh \
+    label "PASS_$if_$dstport_OUT" 
+
+# Outgoing FTP
+pass out log quick on egress proto tcp from (egress:0) to any port ftp \
+    label "PASS_$if_$dstport_OUT"
 
 pass out quick
 
 # Pass rules for traffic coming in on an interface
 
-# For testing tor
-#pass in quick on $int_if inet proto tcp from any to ! $int_if port { http https } divert-to 127.0.0.1 port $trans_port
+# Anti-lockout rules, keep these here even if later rules allow everything in
+# Allow DNS, SSH and DHCP to firewall on INT_IF. 
+pass in quick on $INT_IF proto { udp tcp } from $INT_IF:network to $INT_IF port domain \
+    label "PASS_$if_$proto_$dstport_IN"
+pass in log quick on $INT_IF proto tcp from $INT_IF:network to $INT_IF port ssh \
+    label "PASS_$if_$dstport_IN"
+pass in log quick on $INT_IF proto udp from any port bootpc to any port bootps \
+    label "PASS_$if_$proto_$dstport_IN"
 
-#pass in quick on $int_if inet proto { tcp udp } from any to any port domain rdr-to 127.0.0.1 port 54
+# Do not create states for IPv4 multicast traffic that comes in on INT_IF
+pass in quick on $INT_IF inet from any to 224.0.0.0/3 no state \
+    label "PASS_$if_MULTICAST_IN_NO_STATE"
 
-pass in quick on $int_if
+# Same for UDP broadcast
+pass in quick on $INT_IF inet proto udp from any to $INT_IF:broadcast no state \
+    label "PASS_$if_UDP_BROADCAST_IN_NO_STATE"
 
-pass in quick on egress inet proto ipv6 from $IP_SIXXS_POP_DNA to (egress)
+# LAN interface. Pass everything.
+pass in quick on $INT_IF
 
-pass in on egress inet proto tcp from any to (egress:0) port $PORT_SSH_EXTERNAL \
+
+# WAN interface(s), group egress.
+
+# Allow encapsulated IPv6 on egress from DNA POP.
+pass in quick on egress inet proto ipv6 from $IP_SIXXS_POP_DNA to (egress:0)
+
+# ipv4(4) icmp(4) messages that should pass in on egress
+pass in quick on egress inet proto icmp icmp-type $ICMP_TYPES \
+    label "PASS_$if_ICMP_IN"
+
+# ipv6(4) icmp6(4) messages that should pass in on egress
+pass in quick on egress inet6 proto icmp6 icmp6-type $ICMP6_TYPES \
+    label "PASS_$if_IPV6_ICMP6_IN"
+
+
+# SSH in from the internet.
+pass in quick on egress inet proto tcp from any to (egress:0) port $PORT_SSH_EXTERNAL \
     rdr-to localhost port ssh
 
-pass in on egress inet proto { tcp udp } from any to (egress:0) port $PORT_XMISSION \
+# Bittorrent client running on beat.
+pass in quick on egress inet proto { tcp udp } from any to (egress:0) port $PORT_XMISSION \
     rdr-to 10.71.14.8
 
 
-pass in inet proto icmp all icmp-type $icmp_types
-
-pass in inet6 proto icmp6 all icmp6-type $icmp6_types
 
