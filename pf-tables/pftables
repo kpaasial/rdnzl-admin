@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# PROVIDE: pftables
+# REQUIRE: NETWORKING
+
+
+. /etc/rc.subr
+
+name="pftables"
+rcvar=pftables_enable
+
+command=/opt/sbin/pf-tables.sh
+start_cmd=pftables_start
+
+load_rc_config $name
+
+: ${pftables_enable="NO"}
+
+pftables_start()
+{
+	${command}
+}
+
+run_rc_command "$1"
