@@ -1,43 +1,30 @@
 
-
-
-
 PREFIX=/opt
 
 PFCTL=/sbin/pfctl
 
-SERVICE=/usr/sbin/service
+PF_CONF= pf.conf.openbsd
 
-PF_CONF= pf.conf
-
-SCRIPTS= firewall-log.sh pf-tables.sh load-pf-tables.sh update-pf-tables.sh adsl-modem.sh
-ETCFILES= pf-tables.txt ${PF_CONF}
-RCFILES= pftables
-BASEETCFILES= dhclient-exit-hooks
-
+SCRIPTS= firewall-log.sh
 
 all:
 
-
-install: install-scripts install-etc install-rc install-base-etc
+install: install-scripts install-pf-conf
 
 install-scripts:	$(SCRIPTS)
 	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/sbin 
 
-install-etc:	${ETCFILES}
-	${INSTALL} -o root -g wheel -m 640 $> ${PREFIX}/etc
 
-install-rc: ${RCFILES}
-	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/etc/rc.d
-
-install-base-etc: ${BASEETCFILES}
-	$(INSTALL) -o root -g wheel -m 755 $> /etc
+install-pf-conf: ${PF_CONF}
+	$(INSTALL) -o root -g wheel -m 600 $> /etc/pf.conf
 
 check:
 	${PFCTL} -n -f ${PF_CONF}
 
 reload:
-	${SERVICE} pf reload
+	${PFCTL} -f /etc/pf.conf
 
 restart:
-	${SERVICE} pf restart
+	${PFCTL} -d
+	${PFCTL} -e
+	${PFCTL} -f /etc/pf.conf
