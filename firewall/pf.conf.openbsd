@@ -52,8 +52,6 @@ match out on rl1 inet from any to 192.168.2.0/24 nat-to 192.168.2.200
 match out on egress inet from !(egress:network) to any nat-to (egress:0)
 
 
-#match in on egress inet proto { tcp udp } from any to (egress:0) port $PORT_XMISSION rdr-to 10.71.14.8
-
 # filter rules
 
 
@@ -208,7 +206,7 @@ pass in quick on egress inet proto tcp from any to (egress:0) port $PORT_SSH_EXT
 
 # Bittorrent client running on beat.
 pass in quick on egress inet proto { tcp udp } from any to (egress:0) port $PORT_XMISSION \
-    rdr-to 10.71.14.8
+    rdr-to beat.rdnzl.info
 
 
 
