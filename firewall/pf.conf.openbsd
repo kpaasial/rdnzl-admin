@@ -129,6 +129,10 @@ block drop in log quick on egress proto { tcp, udp } \
     from any to any port = 0 label "BLOCK_$if_PORT_ZERO_DST"
 
 
+# Block chargen, not useful for anything.
+block drop log quick proto udp from any to any port chargen \
+    label "BLOCK_$if_CHARGEN"
+
 # End of rules for dropping unwanted traffic
 
 
