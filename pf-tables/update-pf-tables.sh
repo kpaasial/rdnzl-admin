@@ -13,6 +13,7 @@
 CP=/bin/cp
 FTP=/usr/bin/ftp
 MKTEMP=/usr/bin/mktemp
+PFCTL=/sbin/pfctl
 RM=/bin/rm
 SED=/usr/bin/sed
 
@@ -52,31 +53,63 @@ trap finish EXIT
 # TODO: The configuration file could be validated more strictly here.
 # Now there is only a test that it has three fields per line.
 
-while read line
-do
-    line="${line%%#*}"
+for mode in "download" "store" "load"; do
 
-    if [ -z "${line}" ]; then
-        continue
-    fi
+    while read line
+    do
+        line="${line%%#*}"
 
-    set -- $line
+        if [ -z "${line}" ]; then
+            continue
+        fi
 
-    URL=$1
-    TABLE=$2
+        set -- $line
 
-    if [ -z "${URL}" ] || [ -z "${TABLE}" ]; then
-        echo "Malformed line ${line} in config file ${PFTABLES_CONFIG}"
-        exit 1
-    fi
+        URL=$1
+        TABLE=$2
 
-    TMPFILE="${SCRATCH}/${TABLE}"
+        if [ -z "${URL}" ] || [ -z "${TABLE}" ]; then
+            echo "Malformed line ${line} in config file ${PFTABLES_CONFIG}"
+            exit 1
+        fi
 
-    ${FTP} -o - "${URL}" | \
-        ${SED} -e 's/[;#].*$//g' -e '/^\s*$/d' > "${TMPFILE}" || exit 1
+        TMPFILE="${SCRATCH}/${TABLE}"
 
-done < ${PFTABLES_CONFIG}
 
+        echo "mode: ${mode}"
+
+        case "${mode}" in
+            "download" )
+                ${FTP} -o - "${URL}" | \
+                    ${SED} -e 's/[;#].*$//g' -e '/^\s*$/d' > "${TMPFILE}" || exit 1
+                ;;
+            "store" )
+                if [ ! -r "${TMPFILE}" ]; then
+                    echo "ERROR: Temporary file ${TMPFILE} is not readable."
+                    exit 1
+                fi
+        
+                ${CP} "${TMPFILE}" "${PFTABLES_DBDIR}/${TABLE}.txt"
+                ;;
+            "load" )
+
+                TABLEFILEPATH="${PFTABLES_DBDIR}/${TABLE}.txt"
+    
+                if [ -r "${TABLEFILEPATH}" ]; then 
+                    ${PFCTL} -T flush -t "${TABLE}"
+                    ${PFCTL} -T add -t "${TABLE}" -f "${TABLEFILEPATH}"
+                else
+                    echo "ERROR: table file ${TABLEFILEPATH} not readable."
+                    exit 1
+                fi
+                ;;
+        esac
+
+    done < ${PFTABLES_CONFIG}
+
+done
+
+exit 0
 
 # The second pass places the results to $PFTABLES_DBDIR.
 
