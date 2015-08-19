@@ -3,7 +3,7 @@ PREFIX=/opt
 
 
 SCRIPTS= pf-tables.sh load-pf-tables.sh update-pf-tables.sh
-ETCFILES= pf-tables.txt
+ETCFILES= pf-tables.conf
 
 all:
 
