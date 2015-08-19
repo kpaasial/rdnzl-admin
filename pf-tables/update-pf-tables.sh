@@ -29,7 +29,7 @@ fi
 
 TEMPLATE="XXXXXXXXXX"
 
-SCRATCH=$(${MKTEMP} -d -t pftables-${TEMPLATE})
+SCRATCH=$(${MKTEMP} -d /tmp/pftables-${TEMPLATE})
 
 finish() {
     # Make sure we are deleting a temporary directory created by this script
@@ -71,8 +71,8 @@ do
     fi
 
     TMPFILE="${SCRATCH}/${TABLE}"
-    # TODO: The -M flag is OpenBSD only
-    ${FTP} -M -o - "${URL}" | \
+
+    ${FTP} -o - "${URL}" | \
         ${SED} -e 's/[;#].*$//g' -e '/^\s*$/d' > "${TMPFILE}" || exit 1
 
 done < ${PFTABLES_CONFIG}
