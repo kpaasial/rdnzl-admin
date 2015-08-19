@@ -2,35 +2,55 @@
 
 # Script for loading a set of IP/CIDR tables into pf(4)
 
-CONFIG=/opt/etc/pf-tables.txt
-DBDIR=/var/db/pf-tables
+
+# TODO: Check that PF is enabled before trying to load the tables into it.
+# TODO: Also check that the tables exist in the ruleset.
 
 
-if [ ! -r "${CONFIG}" ]; then
-    echo "ERROR: config file ${CONFIG} not readable."
+: ${PFTABLES_CONFIG:="/opt/etc/pf-tables.conf"}
+: ${PFTABLES_DBDIR:="/var/db/pf-tables"}
+
+PFCTL=/sbin/pfctl
+
+if [ ! -r "${PFTABLES_CONFIG}" ]; then
+    echo "ERROR: config file ${PFTABLES_CONFIG} is not readable."
     exit 1
 fi
 
-if [ ! -d "${DBDIR}" ]; then
-    echo "ERROR: database directory ${DBDIR} does not exist."
+if [ ! -d "${PFTABLES_DBDIR}" ]; then
+    echo "ERROR: database directory ${PFTABLES_DBDIR} does not exist."
     exit 1
 fi
 
-while read URL TABLEFILE TABLE
+
+
+while read line
 do
-    if [ -n "${URL}" ] && [ -n "${TABLEFILE}" ] && [ -n "${TABLE}" ]; then
-        TABLEFILE="${DBDIR}/${TABLEFILE}"
-        echo "TABLEFILE: ${TABLEFILE}"
-        echo "TABLE: ${TABLE}"
-    
-        if [ -r "${TABLEFILE}" ]; then 
-            /sbin/pfctl -T flush -t "${TABLE}"
-            /sbin/pfctl -T add -t "${TABLE}" -f "${TABLEFILE}"
-        else
-            echo "ERROR: table file ${TABLEFILE} not readable."
-            exit 1
-        fi
-        
+    line="${line%%#*}"
+
+    if [ -z "${line}" ]; then
+        continue
     fi
-done < "${CONFIG}"
+
+    set -- $line
+
+    URL=$1
+    TABLE=$2
+
+    if [ -z "${URL}" ] || [ -z "${TABLE}" ]; then
+        echo "Malformed line ${line} in config file ${PFTABLES_CONFIG}"
+        exit 1
+    fi
+
+    TABLEFILEPATH="${PFTABLES_DBDIR}/${TABLE}.txt"
+    
+    if [ -r "${TABLEFILEPATH}" ]; then 
+        ${PFCTL} -T flush -t "${TABLE}"
+        ${PFCTL} -T add -t "${TABLE}" -f "${TABLEFILEPATH}"
+    else
+        echo "ERROR: table file ${TABLEFILEPATH} not readable."
+        exit 1
+    fi
+        
+done < "${PFTABLES_CONFIG}"
 

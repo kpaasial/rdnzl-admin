@@ -1,33 +1,43 @@
 #!/bin/sh --
 
-# Script for updating a set of IP/CIDR tables.i
-# This script does only the updating.
+# Script for updating a set of IP/CIDR tables.
+# This script does only the downloading and updating of the table files.
 
-CONFIG=/opt/etc/pf-tables.txt
-DBDIR=/var/db/pf-tables
+# TODO: do not hardcode paths to utilities. Detect them at run time.
+# TODO: allow a mode that only downloads the files into the temporary directory
+# for testing.
+
+: ${PFTABLES_CONFIG:="/opt/etc/pf-tables.conf"}
+: ${PFTABLES_DBDIR:="/var/db/pf-tables"}
+
+CP=/bin/cp
+FTP=/usr/bin/ftp
+MKTEMP=/usr/bin/mktemp
+RM=/bin/rm
+SED=/usr/bin/sed
 
 
-if [ ! -r "${CONFIG}" ]; then
-    echo "ERROR: config file ${CONFIG} not readable."
+if [ ! -r "${PFTABLES_CONFIG}" ]; then
+    echo "ERROR: config file ${PFTABLES_CONFIG} is not readable."
     exit 1
 fi
 
-
-if [ ! -d "${DBDIR}" ]; then
-    echo "ERROR: database directory ${DBDIR} does not exist."
+if [ ! -d "${PFTABLES_DBDIR}" ]; then
+    echo "ERROR: database directory ${PFTABLES_DBDIR} does not exist."
     exit 1
 fi
 
 TEMPLATE="XXXXXXXXXX"
 
-SCRATCH=$(/usr/bin/mktemp -d -t pftables.${TEMPLATE})
+SCRATCH=$(${MKTEMP} -d -t pftables-${TEMPLATE})
 
 finish() {
     # Make sure we are deleting a temporary directory created by this script
     # and not something else. This script will be run as root, better safe than
-    # sorry.  
-    if echo "${SCRATCH}" | /usr/bin/egrep -q '^/tmp/pftables\..*'; then
-         /bin/rm -rf "${SCRATCH}"
+    # sorry. The trick here is to test if the pattern on the right side of ##
+    # "eats" everything in $SCRATCH. Zero length result means a complete match. 
+    if test -z "${SCRATCH##/tmp/pftables-??????????}" ; then
+         ${RM} -rf "${SCRATCH}"
     else
         echo "Unexpected value for SCRATCH: ${SCRATCH}"
     fi     
@@ -37,42 +47,66 @@ trap finish EXIT
 
 
 # Make two passes over the config file.
-# First pass downloads the files into the SCRATCH directory.
-# Any error in the downloads aborts the script.
-while read URL TABLEFILE TABLE
+# First pass downloads the files into the $SCRATCH directory and removes
+# comments. Any error in the downloads aborts the script and cleans up $SCRATCH.
+# TODO: The configuration file could be validated more strictly here.
+# Now there is only a test that it has three fields per line.
+
+while read line
 do
-    if [ -n "${URL}" ] && [ -n "${TABLEFILE}" ] && [ -n "${TABLE}" ]; then
-        TMPFILE="${SCRATCH}/${TABLEFILE}"
-        /usr/local/bin/curl -o "${TMPFILE}" "${URL}" || exit 1
+    line="${line%%#*}"
+
+    if [ -z "${line}" ]; then
+        continue
     fi
-done < ${CONFIG}
+
+    set -- $line
+
+    URL=$1
+    TABLE=$2
+
+    if [ -z "${URL}" ] || [ -z "${TABLE}" ]; then
+        echo "Malformed line ${line} in config file ${PFTABLES_CONFIG}"
+        exit 1
+    fi
+
+    TMPFILE="${SCRATCH}/${TABLE}"
+    # TODO: The -M flag is OpenBSD only
+    ${FTP} -M -o - "${URL}" | \
+        ${SED} -e 's/[;#].*$//g' -e '/^\s*$/d' > "${TMPFILE}" || exit 1
+
+done < ${PFTABLES_CONFIG}
 
 
-# The second pass strips comments from the downloaded files
-# and places the results to DBDIR.
+# The second pass places the results to $PFTABLES_DBDIR.
 
-while read URL TABLEFILE TABLE
+while read line
 do
-    if [ -n "${URL}" ] && [ -n "${TABLEFILE}" ] && [ -n "${TABLE}" ]; then
+    line="${line%%#*}"
 
-        TMPFILE="${SCRATCH}/${TABLEFILE}"
+    if [ -z "${line}" ]; then
+        continue
+    fi
 
-        if [ ! -r "${TMPFILE}" ]; then
-            echo "ERROR: Temporary file ${TMPFILE} not readable."
-            exit 1
-        fi
-        # Make a backup of the existing tablefile. This script will not restore
-        # the backup in case of errors though.
-        if [ -r "${DBDIR}/${TABLEFILE}" ]; then
-            cp -f "${DBDIR}/${TABLEFILE}" "${DBDIR}/${TABLEFILE}.bak" || exit 1
-        fi
+    set -- $line
+
+    URL=$1
+    TABLE=$2
+
+    if [ -z "${URL}" ] || [ -z "${TABLE}" ]; then
+        echo "Malformed line ${line} in config file ${PFTABLES_CONFIG}"
+        exit 1
+    fi
+
+
+    TMPFILE="${SCRATCH}/${TABLE}"
+
+    if [ ! -r "${TMPFILE}" ]; then
+        echo "ERROR: Temporary file ${TMPFILE} is not readable."
+        exit 1
+    fi
         
-        if [ -r "${TMPFILE}" ]; then
-            sed -e 's/[;#].*$//g' -e '/^\s*$/d' "${TMPFILE}" >"${DBDIR}/${TABLEFILE}"
-        else
-            echo "ERROR: Temporary file ${TMPFILE} does not exist."
-            exit 1
-        fi
-    fi
-done < ${CONFIG}
+    ${CP} "${TMPFILE}" "${PFTABLES_DBDIR}/${TABLE}.txt"
+    
+done < ${PFTABLES_CONFIG}
 
