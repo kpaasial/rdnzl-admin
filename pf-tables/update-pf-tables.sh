@@ -47,11 +47,14 @@ finish() {
 trap finish EXIT
 
 
-# Make two passes over the config file.
+# Make three passes over the config file.
 # First pass downloads the files into the $SCRATCH directory and removes
 # comments. Any error in the downloads aborts the script and cleans up $SCRATCH.
+# Second pass stores the downloaded files at $PFTABLES_DBDIR.
+# Third pass loads the stored table files into PF.
+
 # TODO: The configuration file could be validated more strictly here.
-# Now there is only a test that it has three fields per line.
+# Now there is only a test that it has two fields per line.
 
 for mode in "download" "store" "load"; do
 
@@ -74,9 +77,7 @@ for mode in "download" "store" "load"; do
         fi
 
         TMPFILE="${SCRATCH}/${TABLE}"
-
-
-        echo "mode: ${mode}"
+        TABLEFILEPATH="${PFTABLES_DBDIR}/${TABLE}.txt"
 
         case "${mode}" in
             "download" )
@@ -89,57 +90,19 @@ for mode in "download" "store" "load"; do
                     exit 1
                 fi
         
-                ${CP} "${TMPFILE}" "${PFTABLES_DBDIR}/${TABLE}.txt"
+                ${CP} "${TMPFILE}" "${TABLEFILEPATH}" || exit 1
                 ;;
             "load" )
-
-                TABLEFILEPATH="${PFTABLES_DBDIR}/${TABLE}.txt"
-    
-                if [ -r "${TABLEFILEPATH}" ]; then 
-                    ${PFCTL} -T flush -t "${TABLE}"
-                    ${PFCTL} -T add -t "${TABLE}" -f "${TABLEFILEPATH}"
-                else
+                if [ ! -r "${TABLEFILEPATH}" ]; then
                     echo "ERROR: table file ${TABLEFILEPATH} not readable."
                     exit 1
                 fi
+ 
+                ${PFCTL} -T flush -t "${TABLE}"
+                ${PFCTL} -T add -t "${TABLE}" -f "${TABLEFILEPATH}"
                 ;;
         esac
-
     done < ${PFTABLES_CONFIG}
-
 done
 
 exit 0
-
-# The second pass places the results to $PFTABLES_DBDIR.
-
-while read line
-do
-    line="${line%%#*}"
-
-    if [ -z "${line}" ]; then
-        continue
-    fi
-
-    set -- $line
-
-    URL=$1
-    TABLE=$2
-
-    if [ -z "${URL}" ] || [ -z "${TABLE}" ]; then
-        echo "Malformed line ${line} in config file ${PFTABLES_CONFIG}"
-        exit 1
-    fi
-
-
-    TMPFILE="${SCRATCH}/${TABLE}"
-
-    if [ ! -r "${TMPFILE}" ]; then
-        echo "ERROR: Temporary file ${TMPFILE} is not readable."
-        exit 1
-    fi
-        
-    ${CP} "${TMPFILE}" "${PFTABLES_DBDIR}/${TABLE}.txt"
-    
-done < ${PFTABLES_CONFIG}
-
