@@ -4,7 +4,7 @@
 
 PREFIX=/opt
 
-SCRIPTS= system-dump.sh
+SCRIPTS= firewall-dump.sh
 
 
 all:
