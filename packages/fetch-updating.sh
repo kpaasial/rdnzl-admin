@@ -8,7 +8,7 @@ PKGNG=/usr/local/sbin/pkg
 
 INSTALL=/usr/bin/install
 
-UPDATING_URL=https://svn0.eu.freebsd.org/ports/head/UPDATING
+UPDATING_URL=https://svn.freebsd.org/ports/head/UPDATING
 
 UPDATING_DB_PATH=/var/db/rdnzl-admin
 
