@@ -17,6 +17,7 @@ ports-mgmt/pkg
 ports-mgmt/portlint
 ports-mgmt/portmaster
 ports-mgmt/poudriere-devel
+ports-mgmt/synth
 security/nmap
 security/sudo
 shells/zsh
