@@ -12,7 +12,7 @@ LOCALBASE=/usr/local
 
 SCRIPTS= build-packages.sh ports-dependencies.sh  update-ports.sh
 
-ETCFILES= ports-freebsd10.txt
+ETCFILES= ports-freebsd.txt
 
 POUDRIEREDOTFILES= make.conf
 
