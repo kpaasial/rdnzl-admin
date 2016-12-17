@@ -2,16 +2,20 @@
 
 usage()
 {
-    echo "$0 [-f portsfile] [-j jail] [-p portstree]"
+    echo "$0 [-f portsfile] [-P profile] [-p portsdir]"
     exit 0
 }
 
 
-FLOCK=/usr/local/bin/flock
+SYNTH_PATH=/usr/local/bin/synth
+ENV_PATH=/usr/bin/env
+FLOCK_PATH=/usr/local/bin/flock
 
-: ${RDNZL_CONFIG:="/opt/etc/rdnzl-admin/rdnzl.conf"}
 
-: ${PORTS_TREE:="/usr/ports"}
+if [ -z "${RDNZL_CONFIG}" ]; then
+    echo "RDNZL_CONFIG not set in environment, can not find configuration."
+    exit 1
+fi
 
 if [ -f ${RDNZL_CONFIG} ]; then
     . ${RDNZL_CONFIG}
@@ -21,13 +25,13 @@ else
 fi
 
 
-while getopts "f:hj:p:" o
+while getopts "f:hP:p:" o
 do
     case "$o" in
     f)  PORTS_TXT="$OPTARG";;
     h)  usage;;
-    j)  BUILD_JAIL="$OPTARG";;
-    p)  PORTS_TREE="$OPTARG";;
+    P)  SYNTH_PROFILE="$OPTARG";;
+    p)	SYNTH_PORTSDIR="$OPTARG";;
     *)  usage;;
     esac
 
@@ -38,16 +42,24 @@ shift $((OPTIND-1))
 
 exec 9>/var/db/rdnzl-admin/ports.lock
 
-if ! ${FLOCK} -n 9  ; then
+if ! ${FLOCK_PATH} -n 9  ; then
     echo "Ports tree locked, aborting.";
     exit 1
 fi
 
 
 echo "Using ${PORTS_TXT} as the list for ports to build."
-echo "Using ${BUILD_JAIL} as the build jail."
-echo "Using ${PORTS_TREE} as the ports tree."
 
-${ENV} PORTSDIR="${PORTS_TREE}" ${SYNTH_PATH} just-build ${PORTS_TXT} 
+if [ -n "${SYNTH_PROFILE}" ]; then
+	SYNTH_ENV="${SYNTH_ENV} SYNTHPROFILE=${SYNTH_PROFILE}"
+	echo "Using ${SYNTH_PROFILE} as the Synth profile."
+fi
+
+if [ -n "${SYNTH_PORTSDIR}" ]; then
+	SYNTH_ENV="${SYNTH_ENV} PORTSDIR=${SYNTH_PORTSDIR}"
+	echo "Using ${SYNTH_PORTSDIR} as the ports tree."
+fi
+
+${ENV_PATH} ${SYNTH_ENV} ${SYNTH_PATH} just-build ${PORTS_TXT} 
 
 
