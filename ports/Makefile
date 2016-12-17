@@ -10,7 +10,7 @@ PREFIX=/opt
 
 LOCALBASE=/usr/local
 
-SCRIPTS= build-packages.sh ports-dependencies.sh  update-ports.sh
+SCRIPTS= build-packages.sh build-packages-synth.sh ports-dependencies.sh  update-ports.sh
 
 ETCFILES= ports-freebsd.txt
 
