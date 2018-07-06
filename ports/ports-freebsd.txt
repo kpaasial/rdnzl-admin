@@ -8,8 +8,8 @@ emulators/virtualbox-ose-additions
 ftp/wget
 lang/python
 mail/mutt
+mail/postfix
 net-mgmt/cidr
-net/freeradius3
 net/miniupnpc
 net/mtr
 net/rsync
@@ -18,10 +18,9 @@ ports-mgmt/pkg
 ports-mgmt/portlint
 ports-mgmt/portmaster
 ports-mgmt/poudriere-devel
-ports-mgmt/synth
-security/doas
 security/sudo
 shells/zsh
+sysutils/beadm
 sysutils/cpdup
 sysutils/flock
 sysutils/lsof
