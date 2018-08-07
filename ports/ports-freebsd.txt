@@ -4,7 +4,7 @@ benchmarks/iozone
 benchmarks/iperf
 devel/git
 editors/vim
-emulators/virtualbox-ose-additions
+#emulators/virtualbox-ose-additions
 ftp/wget
 lang/python
 mail/mutt
@@ -13,6 +13,7 @@ net-mgmt/cidr
 net/miniupnpc
 net/mtr
 net/rsync
+net/samba48
 ports-mgmt/dialog4ports
 ports-mgmt/pkg
 ports-mgmt/portlint
