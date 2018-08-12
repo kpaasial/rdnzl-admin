@@ -3,7 +3,7 @@ PREFIX=/opt
 
 PFCTL=/sbin/pfctl
 
-PF_CONF= pf.conf.openbsd
+PF_CONF= pf.conf.freebsd
 
 SCRIPTS= firewall-log.sh
 
