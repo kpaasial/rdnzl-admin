@@ -11,7 +11,7 @@ UNBOUND_INCLUDES= joesgarage.inc
 
 all:
 
-install: install-conf install-includes 
+install: install-conf 
 
 install-includes: ${UNBOUND_INCLUDES}
 	/bin/mkdir -p ${LOCALBASE}/etc/unbound/include
