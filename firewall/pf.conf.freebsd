@@ -4,23 +4,12 @@
 LOOPBACK = lo0
 WAN = re0
 WAN_IPV6 = gif0
-LAN = em0
+LAN = igb0
 
-#JAILS = lo1
-
-# Sonera DHCP server address
-#IP_ISP_DHCP = 88.195.96.1
-
-# SixXS DNA POP address
-IP_SIXXS_POP_DNA = 62.78.96.38 
-
-# IP addresses for accessing the web configurator of the ADSL modem on WAN.
-IP_ADSL_MODEM = 192.168.1.1
-IP_WAN_ALIAS = 192.168.1.200
 
 # Transmission listening port on beat.
 # Remember to sync this with the setting in the app.
-PORT_XMISSION = 51413
+PORT_XMISSION = 55413
 
 # External SSH port on firewall, IPv4.
 PORT_SSH_EXTERNAL = 50022
@@ -37,12 +26,12 @@ ICMP6_TYPES = "{ unreach toobig timex paramprob echoreq routeradv neighbradv } "
 # Bogons
 
 # IPv4 fullbogons
-table <ip_fullbogons_ipv4> persist
-IP_FULLBOGONS_IPV4 = "<ip_fullbogons_ipv4>"
+#table <ip_fullbogons_ipv4> persist
+#IP_FULLBOGONS_IPV4 = "<ip_fullbogons_ipv4>"
 
 # IPv6 fullbogons
-table <ip_fullbogons_ipv6> persist
-IP_FULLBOGONS_IPV6 = "<ip_fullbogons_ipv6>"
+#table <ip_fullbogons_ipv6> persist
+#IP_FULLBOGONS_IPV6 = "<ip_fullbogons_ipv6>"
 
 # Spamhaus DROP and EDROP lists
 table <ip_drop> persist
@@ -60,7 +49,7 @@ set block-policy drop
 set loginterface $WAN
 
 
-set limit table-entries 150000
+set limit table-entries 400000
 set limit states 10000
 #set timeout udp.first 120
 #set timeout udp.single 60
@@ -82,22 +71,22 @@ scrub on $WAN_IPV6 inet6 all fragment reassemble random-id no-df
 # NAT rules.
 
 # Access to the web configurator of the ADSL modem on WAN side.
-nat-anchor "adsl-modem"
+#nat-anchor "adsl-modem"
 
-nat-anchor "miniupnpd"
+#nat-anchor "miniupnpd"
 
 # Default NAT rule. Source NAT all IPv4 traffic from any address but the WAN IP to the WAN IP address
-nat on $WAN inet from ! ($WAN:0) to any -> ($WAN:0) port 1024:65535
+nat on $WAN inet from ! ($WAN) to any -> ($WAN) port 1024:65535
 
 # RDR rules.
 
-rdr-anchor "miniupnpd"
+#rdr-anchor "miniupnpd"
 
 # External SSH access to the firewall on a non-standard port. Use tag for easier rule later.
 rdr on $WAN inet proto tcp from any to ($WAN) port $PORT_SSH_EXTERNAL tag SSH_EXTERNAL -> localhost port 22
 
 # Transmission on beat. Use tags for easier rules later.
-rdr on $WAN inet proto { tcp udp } from any to ($WAN) port $PORT_XMISSION tag XMISSION -> beat.rdnzl.info port $PORT_XMISSION
+rdr on $WAN inet proto { tcp udp } from any to ($WAN) port $PORT_XMISSION tag XMISSION -> 10.71.14.11  port $PORT_XMISSION
 
 
 # Filter rules
@@ -115,9 +104,6 @@ block inet6 all label "DEFAULT_DENY_IPV6"
 # -----------------------------------------------------------------------------
 
 
-# Exceptions to the following rules must be placed first.
-anchor "adsl-modem"
-
 # Silence log noise on WAN from igmp(4) traffic
 block quick on $WAN inet from any to 224.0.0.0/4
 
@@ -132,12 +118,12 @@ pass quick inet6 proto icmp6 from fe80::/10 to ff02::/16 label "PASS_FE80_10_SRC
 antispoof log quick for $WAN inet label "ANTISPOOF"
 
 # Block traffic from/to IPv4 bogons.
-block drop in log quick on $WAN inet from $IP_FULLBOGONS_IPV4 to any label "BLOCK_IPV4_FULLBOGONS_SRC"
-block return out log quick on $WAN inet from any to $IP_FULLBOGONS_IPV4 label "BLOCK_IPV4_FULLBOGONS_DST"
+#block drop in log quick on $WAN inet from $IP_FULLBOGONS_IPV4 to any label "BLOCK_IPV4_FULLBOGONS_SRC"
+#block return out log quick on $WAN inet from any to $IP_FULLBOGONS_IPV4 label "BLOCK_IPV4_FULLBOGONS_DST"
 
 # Block traffic from/to IPv6 bogons.
-block drop in log quick on $WAN_IPV6 inet6 from $IP_FULLBOGONS_IPV6 to any label "BLOCK_IPV6_FULLBOGONS_SRC"
-block return out quick log on $WAN_IPV6 inet6 from any to $IP_FULLBOGONS_IPV6 label "BLOCK_IPV6_FULLBOGONS_DST"
+#block drop in log quick on $WAN_IPV6 inet6 from $IP_FULLBOGONS_IPV6 to any label "BLOCK_IPV6_FULLBOGONS_SRC"
+#block return out quick log on $WAN_IPV6 inet6 from any to $IP_FULLBOGONS_IPV6 label "BLOCK_IPV6_FULLBOGONS_DST"
 
 
 # SixXS recommends blocking this prefix.
@@ -178,6 +164,11 @@ block drop in log quick on $WAN_IPV6 inet6 proto { tcp, udp } \
 # Block chargen, not useful for anything.
 block drop log quick proto udp from any to any port chargen label "BLOCK_$if_CHARGEN"
 
+
+# Block LAN hosts from accessing other DNS forwarders but the one listening on
+# the LAN interface
+block drop log quick on $LAN proto {tcp udp} from any to ! $LAN:0 port = domain 
+
 # End of rules for dropping unwanted traffic
 
 
@@ -185,7 +176,7 @@ block drop log quick proto udp from any to any port chargen label "BLOCK_$if_CHA
 
 # Pass rules
 # -----------------------------------------------------------------------------
-anchor "miniupnpd"
+#anchor "miniupnpd"
 
 
 # Pass rules for traffic leaving out via interfaces
@@ -194,22 +185,22 @@ anchor "miniupnpd"
 # Allow all outbound traffic on all interfaces. Keep log of important traffic.
 
 # DHCP out to ISP
-pass out log quick on $WAN inet proto udp \
-    from any port bootpc to any port bootps label "PASS_$if_DHCP_OUT"
+#pass out log quick on $WAN inet proto udp \
+#    from any port bootpc to any port bootps label "PASS_$if_DHCP_OUT"
 
 # DHCP out on lan interface
-pass out log quick on $LAN inet proto udp \
-    from $LAN port = bootps to any port bootpc label "PASS_$if_DHCP_OUT"
+#pass out log quick on $LAN inet proto udp \
+#    from $LAN port = bootps to any port bootpc label "PASS_$if_DHCP_OUT"
 
 # Encapsulated IPv6 to the SixXS POP
-pass out log quick on $WAN proto ipv6 from ($WAN) to $IP_SIXXS_POP_DNA label "PASS_$if_$proto_OUT"
+#pass out log quick on $WAN proto ipv6 from ($WAN) to $IP_SIXXS_POP_DNA label "PASS_$if_$proto_OUT"
 
 # SSH
 pass out log quick on $WAN inet proto tcp \
     from ($WAN) to any port ssh label "PASS_$if_$dstport_OUT" 
 
 # Outgoing FTP. Active FTP is not supported.
-pass out log quick on $WAN proto tcp from ($WAN) to any port ftp label "PASS_$if_$dstport_OUT"
+#pass out log quick on $WAN proto tcp from ($WAN) to any port ftp label "PASS_$if_$dstport_OUT"
 
 pass out quick all label "PASS_$if_ALL_OUT"
 
@@ -227,7 +218,7 @@ pass in quick on $WAN_IPV6 inet6 proto icmp6 icmp6-type $ICMP6_TYPES label "PASS
 # Allow DNS, SSH and DHCP to firewall on internal 
 pass in quick on $LAN proto { udp tcp } from $LAN:network to $LAN port domain label "PASS_$if_$proto_$dstport_IN"
 pass in log quick on $LAN proto tcp from $LAN:network to $LAN port ssh label "PASS_$if_$dstport_IN"
-pass in log quick on $LAN proto udp from any port bootpc to any port bootps label "PASS_$if_$proto_$dstport_IN"
+pass in quick on $LAN proto udp from any port bootpc to any port bootps label "PASS_$if_$proto_$dstport_IN"
 
 # Do not create states for IPv4 multicast traffic that comes in on LAN
 pass in quick on $LAN inet from any to 224.0.0.0/3 no state label "PASS_$if_MULTICAST_IN_NO_STATE"
@@ -247,20 +238,20 @@ pass in quick on $LAN from any to any label "PASS_$if_ALL_IN"
 # -----------------------------------------------------------------------------
 
 # Allow tunnelled IPv6 from SixXS PoP.
-pass in log quick on $WAN inet proto ipv6 \
-    from $IP_SIXXS_POP_DNA to ($WAN) label "PASS_$if_$proto_IN"
+#pass in log quick on $WAN inet proto ipv6 \
+#    from $IP_SIXXS_POP_DNA to ($WAN) label "PASS_$if_$proto_IN"
 
 # Transmission
 pass in quick on $WAN proto { tcp udp } tagged XMISSION label "PASS_$if_XMISSION_IN"
 
 # Allow transmission to use IPv6
-pass in quick on $WAN_IPV6 inet6 proto { tcp udp } \
-   from any to beat.rdnzl.info port $PORT_XMISSION label "PASS_$if_IPV6_XMISSION_IN"
+#pass in quick on $WAN_IPV6 inet6 proto { tcp udp } \
+#   from any to beat.rdnzl.info port $PORT_XMISSION label "PASS_$if_IPV6_XMISSION_IN"
 
 # SSH to firewall itself 
 pass in log quick on $WAN proto tcp tagged SSH_EXTERNAL label "PASS_$if_SSH_IN"
 
 # SSH to the IPv6 tunnel endpoint
-pass in log quick on $WAN_IPV6 inet6 proto tcp \
-    from any to fw-ext.rdnzl.info port ssh label "PASS_$if_IPV6_SSH_IN"
+#pass in log quick on $WAN_IPV6 inet6 proto tcp \
+#    from any to fw-ext.rdnzl.info port ssh label "PASS_$if_IPV6_SSH_IN"
 
