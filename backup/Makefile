@@ -4,13 +4,13 @@
 
 PREFIX=/opt
 
-SCRIPTS= firewall-dump.sh
+SCRIPTS= media-backup.sh
 
 
 all:
 
 
-install:	$(SCRIPTS)
-	$(INSTALL) -o root -g wheel -m 755 $> $(PREFIX)/sbin 
+install:	${SCRIPTS}
+	${INSTALL} -o root -g wheel -m 755 $> ${DESTDIR}/${PREFIX}/sbin
 
 
