@@ -13,7 +13,7 @@ install: install-conf
 
 
 install-conf: ${NGINX_CONFIG}
-	${INSTALL} -o root -g wheel -m 644 $> ${LOCALBASE}/etc/nginx
+	${INSTALL} -o root -g wheel -m 644 $> ${DESTDIR}${LOCALBASE}/etc/nginx
 
 reload:
 	${SERVICE} nginx reload 
