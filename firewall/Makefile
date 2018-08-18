@@ -3,9 +3,11 @@ PREFIX=/opt
 
 PFCTL=/sbin/pfctl
 
-PF_CONF= pf.conf.freebsd
+PF_CONF= pf.conf
 
 SCRIPTS= firewall-log.sh
+
+SERVICE= /usr/sbin/service
 
 all:
 
@@ -22,9 +24,7 @@ check:
 	${PFCTL} -n -f ${PF_CONF}
 
 reload:
-	${PFCTL} -f /etc/pf.conf
+	${SERVICE} pf reload
 
 restart:
-	${PFCTL} -d
-	${PFCTL} -e
-	${PFCTL} -f /etc/pf.conf
+	${SERVICE} pf restart
