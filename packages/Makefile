@@ -7,17 +7,12 @@ PREFIX=/opt
 
 LOCALBASE=/usr/local
 
-BUILT_SCRIPTS= package-updater.sh
-
-SCRIPTS=    check-packages.sh check-port-updates.sh fetch-updating.sh fetch-audit.sh \
-            ${BUILT_SCRIPTS}
+SCRIPTS= check-port-updates.sh package-check.sh package-updater.sh
 
 PKGREPOFILES = FreeBSD.conf local.conf
 
 
-package-updater.sh: package-updater.sh.in
-	sed -e "s|@@PREFIX@@|${PREFIX}|g" <${.ALLSRC} >${.TARGET}
-
+all:
 
 install: install-scripts install-repo-files
 
