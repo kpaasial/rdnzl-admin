@@ -19,6 +19,7 @@ zfs_dataset_exists() {
 }
 
 # Get mountpoint of a dataset. 
+# TODO: handle none and legacy specially.
 zfs_get_mountpoint() {
     DATASET=$1
 
@@ -30,7 +31,18 @@ zfs_get_mountpoint() {
         echo "${MOUNTPOINT}"
         return 0
     fi
+}
+
+# Create a new snapshot
+zfs_snapshot() {
+    DATASET=$1
+    SNAPSHOTTAG=$2
+    RECURSIVE=$3
+
+    if [ -n "${RECURSIVE}" ]; then
+        ZFSFLAGS="-r"
+    fi 
     
- 
+    $ZFS snapshot "${ZFSFLAGS}" "${DATASET}@${SNAPSHOTTAG}"
 }
 
