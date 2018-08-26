@@ -19,3 +19,4 @@ reload:
 	${SERVICE} nginx reload 
 
 restart:
+	${SERVICE} nginx restart
