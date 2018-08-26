@@ -16,19 +16,24 @@ ETCFILES= ports-freebsd.txt
 
 POUDRIEREDOTFILES= make.conf
 
-PKGREPOFILES = FreeBSD.conf local.conf
 
 
 all:
 
-
-install:
+install-scripts:
 	${INSTALL} -d -o root -g wheel ${DESTDIR}${PREFIX}/sbin
 	${INSTALL} -o root -g wheel -m 755 ${SCRIPTS} ${DESTDIR}${PREFIX}/sbin
+
+
+install-etc-files:
 	${INSTALL} -d -o root -g wheel ${DESTDIR}${PREFIX}/etc
 	${INSTALL} -o root -g wheel -m 644 ${ETCFILES} ${DESTDIR}${PREFIX}/etc
-	${INSTALL} -o root -g wheel -m 644 ${POUDRIEREDOTFILES} ${LOCALBASE}/etc/poudriere.d
-	${INSTALL} -o root -g wheel -m 644 ${PKGREPOFILES} ${LOCALBASE}/etc/pkg/repos
+
+install-dot-files:
+	${INSTALL} -o root -g wheel -m 644 ${POUDRIEREDOTFILES} ${DESTDIR}${LOCALBASE}/etc/poudriere.d
+
+
+install:	install-scripts install-etc-files install-dot-files
 
 
 
