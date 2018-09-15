@@ -21,7 +21,7 @@ media-backup.sh: media-backup.sh.in
 zfs-backup.sh: zfs-backup.sh.in
 
 install:	${SCRIPTS}
-	${INSTALL} -o root -g wheel -m 755 $> ${DESTDIR}/${PREFIX}/sbin
+	${INSTALL} -o root -g wheel -m 755 $> ${DESTDIR}${PREFIX}/sbin
 
 clean:
 	- rm ${BUILT_SCRIPTS}
