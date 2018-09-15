@@ -1,8 +1,7 @@
 #!/bin/sh
 
-PREFIX=@@PREFIX@@
 
-. ${PREFIX}/share/rdnzl/inc/zfs-functions.sh
+. zfs-functions.sh
 
 HOSTNAME=$(/bin/hostname)
 
@@ -34,10 +33,8 @@ BACKUPPATH=$(zfs_get_mountpoint "${BACKUPDATASET}")
 
 BACKUPPATH="${BACKUPPATH}/${BACKUPSUBFOLDER}"
 
-echo "BACKUPPATH: ${BACKUPPATH}"
-
 BACKUPFILE=$( echo "${SOURCEDATASET}" | sed -e 's^/^_^g')
-BACKUPFILE="${BACKUPFILE}@${TIMESTAMP}"
+BACKUPFILE="${BACKUPFILE}@${TIMESTAMP}.gzip"
 
 
 # Create a new recursive snapshot on the source dataset
@@ -47,7 +44,11 @@ if ! zfs_snapshot "${SOURCEDATASET}" "$TIMESTAMP" "1"; then
 fi
 
 
+cat <<EOT
+    Backing up dataset${SOURCEDATASET}@${TIMESTAMP} into \
+    ${BACKUPPATH}/${BACKUPFILE}
+EOT
 
 /sbin/zfs send -R "${SOURCEDATASET}@${TIMESTAMP}" | \
-        /usr/bin/gzip -2 > "${BACKUPPATH}/${BACKUPFILE}.gzip"
+        /usr/bin/gzip -2 > "${BACKUPPATH}/${BACKUPFILE}"
 

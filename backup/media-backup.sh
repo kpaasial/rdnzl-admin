@@ -1,8 +1,7 @@
 #!/bin/sh --
 
-PREFIX=@@PREFIX@@
 
-. ${PREFIX}/share/rdnzl/inc/zfs-functions.sh
+. zfs-functions.sh
 
 SOURCEDATASET=zwzmedia/DATA/media
 DESTDATASET=zwzbackup/DATA/backup
