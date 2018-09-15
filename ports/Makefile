@@ -1,11 +1,4 @@
 
-#.SUFFIXES   : .sh .sh.in
-
-#.sh.in.sh   :
-#	sed -e "s|@@PREFIX@@|${PREFIX}|g" <${.ALLSRC} >${.TARGET}
-
-
-
 PREFIX=/opt
 
 LOCALBASE=/usr/local
