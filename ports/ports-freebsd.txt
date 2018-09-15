@@ -7,7 +7,6 @@ dns/bind913
 dns/ddclient
 dns/unbound
 editors/vim-console
-#emulators/virtualbox-ose-additions
 ftp/wget
 lang/python
 mail/mutt
@@ -32,11 +31,12 @@ sysutils/ataidle
 sysutils/beadm
 sysutils/cpdup
 sysutils/flock
+sysutils/grub2-bhyve
 sysutils/lsof
 sysutils/smartmontools
 sysutils/ssd_report
 sysutils/tmux
+sysutils/vm-bhyve
 sysutils/zfs-stats
-www/elinks
 www/nginx
 www/transmission-web
