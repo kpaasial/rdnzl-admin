@@ -45,7 +45,7 @@ fi
 
 
 cat <<EOT
-    Backing up dataset${SOURCEDATASET}@${TIMESTAMP} into \
+    Backing up dataset ${SOURCEDATASET}@${TIMESTAMP} into \
     ${BACKUPPATH}/${BACKUPFILE}
 EOT
 
