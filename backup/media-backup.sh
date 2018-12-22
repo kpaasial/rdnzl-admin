@@ -1,10 +1,14 @@
 #!/bin/sh --
 
+set -u
 
 . zfs-functions.sh
 
 SOURCEDATASET=zwzmedia/DATA/media
-DESTDATASET=zwzbackup/DATA/backup
+
+DESTPOOL=zwzbackup
+
+DESTDATASET="${DESTPOOL}/DATA/backup"
 DESTSUBFOLDER=media
 
 EXCLUDE_FROM=rsync.exclude
@@ -13,10 +17,23 @@ EXCLUDE_FROM=rsync.exclude
 RSYNC=/usr/local/bin/rsync
 RSYNC_FLAGS="-avz --delete"
 
+if [ `id -u` -ne 0 ]; then
+    echo "Please run $0 as root."
+    exit 1
+fi
 
 if ! zfs_dataset_exists "${SOURCEDATASET}"; then
     echo "Source dataset ${SOURCEDATASET} not available, can not continue."
     exit 1
+fi
+
+
+if ! zfs_pool_exists "${DESTPOOL}"; then
+    echo "Destination pool ${DESTPOOL} not available, trying to import it."   
+    if ! $ZPOOL import "${DESTPOOL}"; then 
+        echo "Can not import ${DESTPOOL}, exiting."
+        exit 1
+    fi
 fi
 
 if ! zfs_dataset_exists "${DESTDATASET}"; then
@@ -54,4 +71,10 @@ if [ -r ${SOURCEMNTPOINT}/${EXCLUDE_FROM} ]; then
 RSYNC_FLAGS="${RSYNC_FLAGS} --exclude=${SOURCEMNTPOINT}/${EXCLUDE_FROM}"
 fi
 
-${RSYNC} ${RSYNC_FLAGS} ${SOURCEMNTPOINT}/ ${DESTMNTPOINT}/${DESTSUBFOLDER}
+if ! ${RSYNC} ${RSYNC_FLAGS} ${SOURCEMNTPOINT}/ ${DESTMNTPOINT}/${DESTSUBFOLDER}; then
+    echo "Backup failed, exiting"
+    exit 1
+fi
+
+
+
