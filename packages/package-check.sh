@@ -10,7 +10,7 @@ Checking for vulnerable packages.
 ---------------------------------
 EOT
 
-${PKG} audit || exit 1
+${PKG} audit || exit 1
 
 cat <<EOT
 

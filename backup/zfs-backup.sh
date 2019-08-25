@@ -8,7 +8,7 @@ HOSTNAME=$(/bin/hostname)
 # Current time with seconds rounded down to 00
 TIMESTAMP=$(/bin/date "+%Y-%m-%d_%R:00")
 
-SOURCEPOOL="zwzfirewall"
+SOURCEPOOL="zwzfreebsd"
 
 BACKUPPOOL="zwzbackup"
 
@@ -17,6 +17,12 @@ SOURCEDATASET="${SOURCEPOOL}/ROOT/default"
 BACKUPDATASET="${BACKUPPOOL}/DATA/backup"
 
 BACKUPSUBFOLDER="$HOSTNAME"
+
+
+if [ $(id -u) -ne 0 ]; then
+    echo "Please run $0 as root"
+    exit 1
+fi
 
 
 if ! zfs_dataset_exists "${SOURCEDATASET}"; then
